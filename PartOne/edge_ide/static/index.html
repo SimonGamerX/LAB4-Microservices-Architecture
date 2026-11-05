@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab 4 - Mini-IDE</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <h1>Lab 4: Smart Space Mini-IDE</h1>
+        <p class="sub">Service Composition & Edge Orchestration</p>
+      </div>
+      <div class="rpi-bar">
+        <span>RPi:</span>
+        <input type="text" id="node-host" value="127.0.0.1" style="width: 110px;">
+        <input type="number" id="node-port" value="8080" style="width: 65px;">
+        <button id="btn-connect" class="btn btn-secondary">Connect</button>
+        <span id="node-status-pill" class="pill pill-offline">Offline</span>
+      </div>
+    </header>
+
+    <!-- 1. Available Service Vectors -->
+    <section class="section">
+      <div class="section-title">
+        <h2>1. Available Services (Vectors)</h2>
+        <span id="service-count">0 found</span>
+      </div>
+      <div id="service-list" class="vector-grid">
+        <div class="empty">Scanning for services...</div>
+      </div>
+    </section>
+
+    <!-- 2. Application Composer -->
+    <section class="section">
+      <div class="section-title">
+        <h2>2. Compose Application</h2>
+        <div class="composer-actions">
+          <select id="preset-selector">
+            <option value="">-- Load Example --</option>
+            <option value="preset-order">Example 1: Order-Based (RUN A THEN B)</option>
+            <option value="preset-light">Example 2: Condition (IF Light &lt; 30 DO Alarm ON)</option>
+            <option value="preset-temp">Example 3: Condition (IF Temp &gt; 28 DO Fan ON)</option>
+          </select>
+          <button id="btn-add-order" class="btn btn-order">+ Order Rule</button>
+          <button id="btn-add-condition" class="btn btn-cond">+ Condition Rule</button>
+          <button id="btn-clear-rules" class="btn btn-outline">Clear</button>
+        </div>
+      </div>
+
+      <div id="rules-container" class="rules-list">
+        <!-- Dynamic rules inserted here -->
+      </div>
+
+      <div class="run-bar">
+        <button id="btn-run-app" class="btn btn-primary">▶ Run Application</button>
+      </div>
+    </section>
+
+    <!-- 3. Execution Log -->
+    <section class="section">
+      <div class="section-title">
+        <h2>3. Execution Output</h2>
+        <button id="btn-clear-trace" class="btn btn-outline btn-sm">Clear</button>
+      </div>
+      <div id="trace-log" class="console-box">
+        <div class="empty">Click "Run Application" to see execution results.</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
