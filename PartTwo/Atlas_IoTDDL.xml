@@ -1,0 +1,328 @@
+<Atlas_IoTDDL>
+	<Atlas_Thing>
+		<Descriptive_Metadata>
+			<Thing_ATID>MySmartThing01</Thing_ATID>
+			<Thing_Name>SmartSpacePi</Thing_Name>
+			<Thing_Owner>iotpj</Thing_Owner>
+			<Thing_Vendor>RaspberryPiCo</Thing_Vendor>
+			<Thing_Model>4B</Thing_Model>
+			<Thing_ReleaseDate>8/2020</Thing_ReleaseDate>
+			<Thing_Type>Thing of Things</Thing_Type>
+			<Thing_OperatingSystem>Raspbian</Thing_OperatingSystem>
+			<Thing_ShortDescription>Raspberry Pi 4B Smart Environmental and Safety Space</Thing_ShortDescription>
+			<LongDescription>Virtual Smart Space Thing hosting analog sensors and digital actuators via Atlas Middleware</LongDescription>
+			<Thing_SSID>MySmartSpace</Thing_SSID>
+			<Space_Coordinates></Space_Coordinates>
+			<Space_Name>Lab Smart Space</Space_Name>
+			<Space_Description>Virtual Smart Space node</Space_Description>
+			<Space_Constraints>
+				<Temperature>
+					<Lower_Bound>0</Lower_Bound>
+					<Upper_Bound>50</Upper_Bound>
+				</Temperature>
+				<Humidity>
+					<Lower_Bound>10</Lower_Bound>
+					<Upper_Bound>90</Upper_Bound>
+				</Humidity>
+				<Voltage>
+					<Lower_Bound>3.0</Lower_Bound>
+					<Upper_Bound>3.6</Upper_Bound>
+				</Voltage>
+				<Radio_Interference_Radius></Radio_Interference_Radius>
+				<Safe_Temperature_Radius></Safe_Temperature_Radius>
+			</Space_Constraints>
+		</Descriptive_Metadata>
+		<Administrative_Metadata>
+			<Network_Manager>
+				<Module>WiFi</Module>
+				<Type>Built-In</Type>
+				<Network_Name>MySpaceNetwork</Network_Name>
+				<Network_Passcode>MySpaceNetwork</Network_Passcode>
+				<MulticastGroup>
+					<IP>232.1.1.1</IP>
+					<Port>1235</Port>
+				</MulticastGroup>
+				<Communication_Protocol></Communication_Protocol>
+				<InterOperableCommunication>
+					<Broker>
+						<Vendor>HiveMQ</Vendor>
+						<Dashboard>http://www.mqtt-dashboard.com/</Dashboard>
+						<IP>broker.hivemq.com</IP>
+						<Port>1883</Port>
+					</Broker>
+					<Topic>
+						<Root>/Atlas</Root>
+						<Network_MQTTClient>/Network/MQTT_Client</Network_MQTTClient>
+						<Network_PrivateBroker>/Network/Private_Broker</Network_PrivateBroker>
+						<Multicast_ThingIdentity>/Multicast/Tweet_ThingIdentity</Multicast_ThingIdentity>
+						<Multicast_EntityIdentity>/Multicast/Tweet_EntityIdentity</Multicast_EntityIdentity>
+						<Multicast_API>/Multicast/API</Multicast_API>
+						<Unicast>/Unicast/Interaction</Unicast>
+					</Topic>
+				</InterOperableCommunication>
+				<OMA_DM>
+					<AccessName>Eclipse Leshan</AccessName>
+					<IP>coap://leshan.eclipseprojects.io</IP>
+					<Port>5683</Port>
+				</OMA_DM>
+			</Network_Manager>
+			<Memory_Manager>
+				<Store_Format></Store_Format>
+				<MemoryUnit_Application></MemoryUnit_Application>
+				<MemoryUnit_Knowledge></MemoryUnit_Knowledge>
+			</Memory_Manager>
+		</Administrative_Metadata>
+		<Thing_Attachment>
+		</Thing_Attachment>
+		<Structural_Metadata>
+			<Number_Hardware>4</Number_Hardware>
+			<Number_Software>0</Number_Software>
+			<Number_Hybrid>0</Number_Hybrid>
+			<Number_Entities>4</Number_Entities>
+		</Structural_Metadata>
+	</Atlas_Thing>
+	<Atlas_Entities>
+		<!-- Entity 1: Ambient Light Sensor (MCP3008 ADC CH0) -->
+		<Entity_1>
+			<Descriptive_Metadata>
+				<ID>Entity_LightSensor</ID>
+				<Name>LightSensor</Name>
+				<Owner>iotpj</Owner>
+				<Vendor>LDR</Vendor>
+				<Category>Hardware</Category>
+				<Type>Sensor</Type>
+				<Description>Measures ambient light intensity via MCP3008 Channel 0</Description>
+			</Descriptive_Metadata>
+			<Services>
+				<Service_1>
+					<Name>Read_Light_Level</Name>
+					<AppCategory>Sensing</AppCategory>
+					<Type>Report</Type>
+					<Keywords>Light,Sensor,ADC,LDR</Keywords>
+					<Description>Reads ambient light level percentage from MCP3008 ADC Channel 0</Description>
+					<Contextual_Constraints>
+						<Time_Window>10seconds</Time_Window>
+						<Usage_Mode></Usage_Mode>
+						<Concurrent></Concurrent>
+					</Contextual_Constraints>
+					<Temporal_Constraints>
+						<Working>
+							<StartTime>00:00:00</StartTime>
+							<EndTime>23:59:59</EndTime>
+						</Working>
+						<Callable>
+							<StartTime>00:00:00</StartTime>
+							<EndTime>23:59:59</EndTime>
+						</Callable>
+					</Temporal_Constraints>
+					<OutputDescription>value</OutputDescription>
+					<OutputType>int</OutputType>
+					<Service_Formula><![CDATA[
+// Maps raw 10-bit MCP3008 count (0-1023) on CH0 to percentage (0-100)
+int pct = (mcpRead0 * 100) / 1023;
+value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
+]]></Service_Formula>
+					<Service_NumberInputs>0</Service_NumberInputs>
+					<Service_InputTypes></Service_InputTypes>
+					<Service_InputDescriptions></Service_InputDescriptions>
+					<Library_Number>1</Library_Number>
+					<Libraries>wiringPi.h</Libraries>
+					<ADC_Number>1</ADC_Number>
+					<ADC>
+						<ADC_1>
+							<Type>MCP3008</Type>
+							<Channel>0</Channel>
+							<ADC_Output>mcpRead0</ADC_Output>
+						</ADC_1>
+					</ADC>
+				</Service_1>
+				<Number_Services>1</Number_Services>
+			</Services>
+			<UnboundedService>
+				<Number_UnboundedServices>0</Number_UnboundedServices>
+			</UnboundedService>
+			<Relationships>
+				<Number_Relationships>0</Number_Relationships>
+			</Relationships>
+		</Entity_1>
+
+		<!-- Entity 2: Analog Temperature Sensor / Potentiometer (MCP3008 ADC CH1) -->
+		<Entity_2>
+			<Descriptive_Metadata>
+				<ID>Entity_TempSensor</ID>
+				<Name>TempSensor</Name>
+				<Owner>iotpj</Owner>
+				<Vendor>Analog</Vendor>
+				<Category>Hardware</Category>
+				<Type>Sensor</Type>
+				<Description>Measures temperature dial via MCP3008 Channel 1</Description>
+			</Descriptive_Metadata>
+			<Services>
+				<Service_1>
+					<Name>Read_Temperature</Name>
+					<AppCategory>Sensing</AppCategory>
+					<Type>Report</Type>
+					<Keywords>Temperature,Sensor,ADC,Potentiometer</Keywords>
+					<Description>Reads analog temperature level in Celsius from MCP3008 Channel 1</Description>
+					<Contextual_Constraints>
+						<Time_Window>10seconds</Time_Window>
+						<Usage_Mode></Usage_Mode>
+						<Concurrent></Concurrent>
+					</Contextual_Constraints>
+					<Temporal_Constraints>
+						<Working>
+							<StartTime>00:00:00</StartTime>
+							<EndTime>23:59:59</EndTime>
+						</Working>
+						<Callable>
+							<StartTime>00:00:00</StartTime>
+							<EndTime>23:59:59</EndTime>
+						</Callable>
+					</Temporal_Constraints>
+					<OutputDescription>value</OutputDescription>
+					<OutputType>int</OutputType>
+					<Service_Formula><![CDATA[
+// Maps raw 10-bit count (0-1023) across 3.3V reference to 15C-45C span
+value = 15 + ((mcpRead1 * 30) / 1023);
+]]></Service_Formula>
+					<Service_NumberInputs>0</Service_NumberInputs>
+					<Service_InputTypes></Service_InputTypes>
+					<Service_InputDescriptions></Service_InputDescriptions>
+					<Library_Number>1</Library_Number>
+					<Libraries>wiringPi.h</Libraries>
+					<ADC_Number>1</ADC_Number>
+					<ADC>
+						<ADC_1>
+							<Type>MCP3008</Type>
+							<Channel>1</Channel>
+							<ADC_Output>mcpRead1</ADC_Output>
+						</ADC_1>
+					</ADC>
+				</Service_1>
+				<Number_Services>1</Number_Services>
+			</Services>
+			<UnboundedService>
+				<Number_UnboundedServices>0</Number_UnboundedServices>
+			</UnboundedService>
+			<Relationships>
+				<Number_Relationships>0</Number_Relationships>
+			</Relationships>
+		</Entity_2>
+
+		<!-- Entity 3: Alarm Actuator (Red LED on GPIO 16) -->
+		<Entity_3>
+			<Descriptive_Metadata>
+				<ID>Entity_AlarmLED</ID>
+				<Name>AlarmLED</Name>
+				<Owner>iotpj</Owner>
+				<Vendor>Generic</Vendor>
+				<Category>Hardware</Category>
+				<Type>Actuator</Type>
+				<Description>Red Alert indicator LED connected to GPIO 16</Description>
+			</Descriptive_Metadata>
+			<Services>
+				<Service_1>
+					<Name>Set_Alarm_LED</Name>
+					<AppCategory>Actuation</AppCategory>
+					<Type>Action</Type>
+					<Keywords>Alarm,LED,Actuator,GPIO</Keywords>
+					<Description>Switches Red Alarm LED ON (1) or OFF (0)</Description>
+					<Contextual_Constraints>
+						<Time_Window>10seconds</Time_Window>
+						<Usage_Mode></Usage_Mode>
+						<Concurrent></Concurrent>
+					</Contextual_Constraints>
+					<Temporal_Constraints>
+						<Working>
+							<StartTime>00:00:00</StartTime>
+							<EndTime>23:59:59</EndTime>
+						</Working>
+						<Callable>
+							<StartTime>00:00:00</StartTime>
+							<EndTime>23:59:59</EndTime>
+						</Callable>
+					</Temporal_Constraints>
+					<OutputDescription></OutputDescription>
+					<OutputType>void</OutputType>
+					<Service_Formula><![CDATA[
+int pin = 16;
+wiringPiSetupGpio();
+pinMode(pin, OUTPUT);
+digitalWrite(pin, (state != 0) ? HIGH : LOW);
+]]></Service_Formula>
+					<Service_NumberInputs>1</Service_NumberInputs>
+					<Service_InputTypes>int</Service_InputTypes>
+					<Service_InputDescriptions>state</Service_InputDescriptions>
+					<Library_Number>1</Library_Number>
+					<Libraries>wiringPi.h</Libraries>
+					<ADC_Number>0</ADC_Number>
+				</Service_1>
+				<Number_Services>1</Number_Services>
+			</Services>
+			<UnboundedService>
+				<Number_UnboundedServices>0</Number_UnboundedServices>
+			</UnboundedService>
+			<Relationships>
+				<Number_Relationships>0</Number_Relationships>
+			</Relationships>
+		</Entity_3>
+
+		<!-- Entity 4: Cooling / Fan Actuator (Green LED on GPIO 13) -->
+		<Entity_4>
+			<Descriptive_Metadata>
+				<ID>Entity_CoolingLED</ID>
+				<Name>CoolingLED</Name>
+				<Owner>iotpj</Owner>
+				<Vendor>Generic</Vendor>
+				<Category>Hardware</Category>
+				<Type>Actuator</Type>
+				<Description>Green Cooling/Fan status LED connected to GPIO 13</Description>
+			</Descriptive_Metadata>
+			<Services>
+				<Service_1>
+					<Name>Set_Cooling_Indicator</Name>
+					<AppCategory>Actuation</AppCategory>
+					<Type>Action</Type>
+					<Keywords>Cooling,Fan,LED,Actuator,GPIO</Keywords>
+					<Description>Switches Green Cooling LED ON (1) or OFF (0)</Description>
+					<Contextual_Constraints>
+						<Time_Window>10seconds</Time_Window>
+						<Usage_Mode></Usage_Mode>
+						<Concurrent></Concurrent>
+					</Contextual_Constraints>
+					<Temporal_Constraints>
+						<Working>
+							<StartTime>00:00:00</StartTime>
+							<EndTime>23:59:59</EndTime>
+						</Working>
+						<Callable>
+							<StartTime>00:00:00</StartTime>
+							<EndTime>23:59:59</EndTime>
+						</Callable>
+					</Temporal_Constraints>
+					<OutputDescription></OutputDescription>
+					<OutputType>void</OutputType>
+					<Service_Formula><![CDATA[
+int pin = 13;
+wiringPiSetupGpio();
+pinMode(pin, OUTPUT);
+digitalWrite(pin, (state != 0) ? HIGH : LOW);
+]]></Service_Formula>
+					<Service_NumberInputs>1</Service_NumberInputs>
+					<Service_InputTypes>int</Service_InputTypes>
+					<Service_InputDescriptions>state</Service_InputDescriptions>
+					<Library_Number>1</Library_Number>
+					<Libraries>wiringPi.h</Libraries>
+					<ADC_Number>0</ADC_Number>
+				</Service_1>
+				<Number_Services>1</Number_Services>
+			</Services>
+			<UnboundedService>
+				<Number_UnboundedServices>0</Number_UnboundedServices>
+			</UnboundedService>
+			<Relationships>
+				<Number_Relationships>0</Number_Relationships>
+			</Relationships>
+		</Entity_4>
+	</Atlas_Entities>
+</Atlas_IoTDDL>
