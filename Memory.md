@@ -1,4 +1,4 @@
-# Lab 4 Project Memory & Context
+# Lab 4 Project Memory & Context.
 
 **Course**: B8019 - Programming the Internet of Things (Fall 2026)  
 **Instructor**: Prof. Sumi Helal  
