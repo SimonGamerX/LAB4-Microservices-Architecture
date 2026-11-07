@@ -10,7 +10,7 @@
 			<Thing_Type>Thing of Things</Thing_Type>
 			<Thing_OperatingSystem>Raspbian</Thing_OperatingSystem>
 			<Thing_ShortDescription>Raspberry Pi 4B Smart Environmental and Safety Space</Thing_ShortDescription>
-			<LongDescription>Virtual Smart Space Thing hosting analog sensors and digital actuators via Atlas Middleware</LongDescription>
+			<LongDescription>Virtual Smart Space Thing hosting ADS1115 ADC sensor, rotary encoder thermostat dial, and digital LED actuators via Atlas Middleware</LongDescription>
 			<Thing_SSID>MySmartSpace</Thing_SSID>
 			<Space_Coordinates></Space_Coordinates>
 			<Space_Name>Lab Smart Space</Space_Name>
@@ -82,7 +82,7 @@
 		</Structural_Metadata>
 	</Atlas_Thing>
 	<Atlas_Entities>
-		<!-- Entity 1: Ambient Light Sensor (MCP3008 ADC CH0) -->
+		<!-- Entity 1: Ambient Light Sensor (ADS1115 ADC CH0) -->
 		<Entity_1>
 			<Descriptive_Metadata>
 				<ID>Entity_LightSensor</ID>
@@ -91,7 +91,7 @@
 				<Vendor>LDR</Vendor>
 				<Category>Hardware</Category>
 				<Type>Sensor</Type>
-				<Description>Measures ambient light intensity via MCP3008 Channel 0</Description>
+				<Description>Measures ambient light intensity via ADS1115 Channel 0</Description>
 			</Descriptive_Metadata>
 			<Services>
 				<Service_1>
@@ -99,7 +99,7 @@
 					<AppCategory>Sensing</AppCategory>
 					<Type>Report</Type>
 					<Keywords>Light,Sensor,ADC,LDR</Keywords>
-					<Description>Reads ambient light level percentage from MCP3008 ADC Channel 0</Description>
+					<Description>Reads ambient light level percentage from ADS1115 ADC Channel 0</Description>
 					<Contextual_Constraints>
 						<Time_Window>10seconds</Time_Window>
 						<Usage_Mode></Usage_Mode>
@@ -118,8 +118,8 @@
 					<OutputDescription>value</OutputDescription>
 					<OutputType>int</OutputType>
 					<Service_Formula><![CDATA[
-// Maps raw 10-bit MCP3008 count (0-1023) on CH0 to percentage (0-100)
-int pct = (mcpRead0 * 100) / 1023;
+// Maps 16-bit ADS1115 reading (0-65535) on CH0 to percentage (0-100)
+int pct = (adsRead0 * 100) / 65535;
 value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 ]]></Service_Formula>
 					<Service_NumberInputs>0</Service_NumberInputs>
@@ -130,9 +130,9 @@ value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 					<ADC_Number>1</ADC_Number>
 					<ADC>
 						<ADC_1>
-							<Type>MCP3008</Type>
+							<Type>ADS1115</Type>
 							<Channel>0</Channel>
-							<ADC_Output>mcpRead0</ADC_Output>
+							<ADC_Output>adsRead0</ADC_Output>
 						</ADC_1>
 					</ADC>
 				</Service_1>
@@ -146,24 +146,24 @@ value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 			</Relationships>
 		</Entity_1>
 
-		<!-- Entity 2: Analog Temperature Sensor / Potentiometer (MCP3008 ADC CH1) -->
+		<!-- Entity 2: Thermostat Dial (Rotary Encoder on GPIO 17 & 27) -->
 		<Entity_2>
 			<Descriptive_Metadata>
 				<ID>Entity_TempSensor</ID>
 				<Name>TempSensor</Name>
 				<Owner>iotpj</Owner>
-				<Vendor>Analog</Vendor>
+				<Vendor>RotaryEncoder</Vendor>
 				<Category>Hardware</Category>
 				<Type>Sensor</Type>
-				<Description>Measures temperature dial via MCP3008 Channel 1</Description>
+				<Description>Reads simulated thermostat temperature dial via Rotary Encoder on GPIO 17 and 27</Description>
 			</Descriptive_Metadata>
 			<Services>
 				<Service_1>
 					<Name>Read_Temperature</Name>
 					<AppCategory>Sensing</AppCategory>
 					<Type>Report</Type>
-					<Keywords>Temperature,Sensor,ADC,Potentiometer</Keywords>
-					<Description>Reads analog temperature level in Celsius from MCP3008 Channel 1</Description>
+					<Keywords>Temperature,Sensor,Thermostat,RotaryEncoder,GPIO</Keywords>
+					<Description>Reads simulated thermostat dial temperature in Celsius from Rotary Encoder</Description>
 					<Contextual_Constraints>
 						<Time_Window>10seconds</Time_Window>
 						<Usage_Mode></Usage_Mode>
@@ -182,22 +182,30 @@ value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 					<OutputDescription>value</OutputDescription>
 					<OutputType>int</OutputType>
 					<Service_Formula><![CDATA[
-// Maps raw 10-bit count (0-1023) across 3.3V reference to 15C-45C span
-value = 15 + ((mcpRead1 * 30) / 1023);
+int clkPin = 17;
+int dtPin = 27;
+wiringPiSetupGpio();
+pinMode(clkPin, INPUT);
+pinMode(dtPin, INPUT);
+static int currentTemp = 24;
+static int lastClk = HIGH;
+int clkState = digitalRead(clkPin);
+if (clkState != lastClk && clkState == LOW) {
+    if (digitalRead(dtPin) != clkState) {
+        if (currentTemp < 45) currentTemp++;
+    } else {
+        if (currentTemp > 15) currentTemp--;
+    }
+}
+lastClk = clkState;
+value = currentTemp;
 ]]></Service_Formula>
 					<Service_NumberInputs>0</Service_NumberInputs>
 					<Service_InputTypes></Service_InputTypes>
 					<Service_InputDescriptions></Service_InputDescriptions>
 					<Library_Number>1</Library_Number>
 					<Libraries>wiringPi.h</Libraries>
-					<ADC_Number>1</ADC_Number>
-					<ADC>
-						<ADC_1>
-							<Type>MCP3008</Type>
-							<Channel>1</Channel>
-							<ADC_Output>mcpRead1</ADC_Output>
-						</ADC_1>
-					</ADC>
+					<ADC_Number>0</ADC_Number>
 				</Service_1>
 				<Number_Services>1</Number_Services>
 			</Services>

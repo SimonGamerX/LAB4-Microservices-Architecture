@@ -4,7 +4,7 @@
 **Instructor**: Prof. Sumi Helal  
 **Teaching Assistant**: Junjie Li (`lijunjie@ufl.edu`)  
 **Group Identifier**: `iotpj`  
-**Workspace**: `c:\Users\Withe\OneDrive\Desktop\LAB4`  
+**Workspace**: `c:\Users\rosae\Desktop\LAB4-Microservices-Architecture`  
 
 ---
 
@@ -15,32 +15,39 @@ Transition the Virtual Smart Space (VSS) from monolithic embedded code (Labs 1�
 
 ---
 
-## 2. Hardware Architecture & Wiring
+## 2. Hardware Architecture & Minimal Wiring (ADS1115 + Rotary Encoder)
 
-### Devices Needed (Mandatory Checklist)
+### Devices Checklist (Single 3.3V Rail Configuration)
 1. **Raspberry Pi 4B** (+ MicroSD card + USB-C power supply).
-2. **Red GPIO Extension Board (T-Cobbler)** + Ribbon Cable (already in breadboard).
-3. **MCP3008 ADC** (16-pin DIP chip - required because RPi has no analog GPIOs).
-4. **Photoresistor (LDR)** + 10kΩ resistor (Ambient light sensing on ADC CH0).
-5. **10kΩ Potentiometer** (Simulated temperature dial on ADC CH1; knob enables instant condition demo).
-6. **Red LED** (Alarm indicator on GPIO 16 with 220Ω resistor).
-7. **Green LED** (Cooling/Fan indicator on GPIO 13 with 220Ω resistor).
-8. **Jumper Wires** (M-F and M-M).
+2. **Red GPIO Extension Board (T-Cobbler)** + Ribbon Cable (in breadboard).
+3. **ADS1115 ADC Breakout Board** (16-bit 4-channel I2C ADC module; address 0x48 on SDA=GPIO2, SCL=GPIO3).
+4. **Photoresistor (LDR)** + 10kΩ resistor (Ambient light sensing on ADS1115 Channel A0 — 0 jumper wires).
+5. **KY-040 5-Pin Rotary Encoder** (Simulated room thermostat dial on GPIO 17 & 27).
+6. **Red LED** (Safety / Alarm indicator on GPIO 16 with 220Ω resistor).
+7. **Green LED** (Cooling / Fan indicator on GPIO 13 with 220Ω resistor).
+8. **Minimal Jumper Wires** (12 wires total across the entire breadboard).
 9. **Laptop** (Edge layer, web dashboard).
 
 ### Pin Mapping Table
-| Device / Function | Breadboard Connection | Raspberry Pi / T-Cobbler Pin |
-| :--- | :--- | :--- |
-| **MCP3008 VDD & VREF** | 3.3V Power Rail | `3V3` (Pin 1) |
-| **MCP3008 AGND & DGND** | Ground Rail | `GND` (Pin 6/9) |
-| **MCP3008 CLK** | Pin 13 | `GPIO18` (Pin 12) |
-| **MCP3008 DOUT (MISO)**| Pin 12 | `GPIO23` (Pin 16) |
-| **MCP3008 DIN (MOSI)** | Pin 11 | `GPIO24` (Pin 18) |
-| **MCP3008 CS / SHDN** | Pin 10 | `GPIO25` (Pin 22) |
-| **LDR (Light)** | Pin 1 (CH0) | Voltage divider with 10kΩ pull-down to GND |
-| **Potentiometer (Temp)**| Pin 2 (CH1) | Center wiper pin (outer pins to 3.3V and GND) |
-| **Red LED (Alarm)** | Breadboard row | `GPIO16` (Pin 36) through 220Ω resistor to GND |
-| **Green LED (Cooling)**| Breadboard row | `GPIO13` (Pin 33) through 220Ω resistor to GND |
+| Device / Function | Component Pin | Raspberry Pi / T-Cobbler Pin | Breadboard Connection |
+| :--- | :--- | :--- | :--- |
+| **Main 3.3V Power** | `3V3` | `3V3` (Pin 1) | Breadboard Red `(+)` Rail |
+| **Main Ground** | `GND` | `GND` (Pin 6/9) | Breadboard Blue `(-)` Rail |
+| **ADS1115 VDD** | `VDD` | — | Breadboard Red `(+)` Rail |
+| **ADS1115 GND** | `GND` | — | Breadboard Blue `(-)` Rail |
+| **ADS1115 SCL** | `SCL` | `SCL` / `GPIO3` (Pin 5) | Breadboard Row 22 |
+| **ADS1115 SDA** | `SDA` | `SDA` / `GPIO2` (Pin 3) | Breadboard Row 23 |
+| **ADS1115 ADDR** | `ADDR` | — | *Unconnected* (onboard pull-down sets 0x48) |
+| **ADS1115 ALRT** | `ALRT` | — | *Unconnected* |
+| **LDR (Light)** | Leg 1 to 2 | Channel A0 | Leg 1 in `(+)` Rail, Leg 2 in Row 26 (A0) |
+| **10kΩ Pull-down** | Lead 1 to 2 | Channel A0 | Lead 1 in Row 26 (A0), Lead 2 in `(-)` Rail |
+| **Rotary Encoder `+`**| `+` | — | Breadboard Red `(+)` Rail |
+| **Rotary Encoder `GND`**| `GND` | — | Breadboard Blue `(-)` Rail |
+| **Rotary Encoder `CLK`**| `CLK` | `GPIO17` (Pin 11) | Breadboard / direct wire |
+| **Rotary Encoder `DT`** | `DT` | `GPIO27` (Pin 13) | Breadboard / direct wire |
+| **Rotary Encoder `SW`** | `SW` | — | *Unconnected* |
+| **Red LED (Alarm)** | Anode (+) | `GPIO16` (Pin 36) | Long leg in Row 11; short leg via 220Ω to `(-)` Rail |
+| **Green LED (Cooling)**| Anode (+) | `GPIO13` (Pin 33) | Long leg in Row 14; short leg via 220Ω to `(-)` Rail |
 
 ---
 
@@ -54,7 +61,7 @@ LAB4/
 ├── PartOne/
 │   ├── rpi_server/             # C/C++ services & REST server (Port 8080)
 │   │   ├── main.cpp            # Server entry point, dispatching, socket listener
-│   │   ├── services.cpp        # C++ hardware functions & Software SPI bit-banging
+│   │   ├── services.cpp        # C++ hardware functions, ADS1115 I2C & Rotary Encoder thread
 │   │   ├── services.hpp        # Service vector definitions & headers
 │   │   ├── Makefile            # Standalone build for Raspberry Pi (make)
 │   │   └── CMakeLists.txt      # CMake build configuration
@@ -66,7 +73,7 @@ LAB4/
 │   │       └── app.js
 │   └── README.md               # Commands-only execution reference
 ├── PartTwo/
-│   ├── Atlas_IoTDDL.xml        # Valid IoT-DDL XML describing 4 bit-thing entities
+│   ├── Atlas_IoTDDL.xml        # Valid IoT-DDL XML describing 4 entities (ADS1115 & Rotary Encoder)
 │   ├── demo_app.py             # TCP Port 6668 JSON client (interactive + automated)
 │   └── README.md               # Commands-only execution reference
 └── Memory.md                   # This project memory and context document
@@ -79,6 +86,10 @@ LAB4/
 ### Part One (Physical & Edge Layers)
 - **On Raspberry Pi**:
   ```bash
+  # Ensure I2C is enabled:
+  sudo raspi-config
+  # Interface Options -> I2C -> Enable -> Yes
+  
   cd PartOne/rpi_server
   make
   ./rpi_service_server RPi-1 8080
@@ -111,9 +122,9 @@ LAB4/
 
 ---
 
-## 5. Next Steps (Pending Physical Hardware)
-1. Procure the MCP3008 ADC, LDR, potentiometer, and 2 LEDs.
-2. Wire the breadboard using the pin table above.
-3. Test Part One using the commands in `PartOne/README.md`.
-4. Deploy Atlas Middleware and test Part Two using `PartTwo/README.md`.
-5. Prepare submission `.zip` containing `PartOne/` and `PartTwo/`.
+## 5. Summary of Actuators & Condition Scenarios
+- **Green LED (Cooling / Fan)**: Controlled via `Set_Cooling_Indicator(state)`.
+  *Demo rule*: `IF Read_Temperature > 28 DO Set_Cooling_Indicator 1` (Turning the rotary encoder past 28°C turns on the cooling indicator).
+- **Red LED (Alarm / Danger)**: Controlled via `Set_Alarm_LED(state)`.
+  *Demo rule*: `IF Read_Temperature > 35 DO Set_Alarm_LED 1` (Overheat alarm) or `IF Read_Light_Level < 15 DO Set_Alarm_LED 1` (Intrusion / Darkness alarm).
+- **Calibration**: `Calibrate_Sensors()` flashes both LEDs for 250ms to signal hardware operational status.
