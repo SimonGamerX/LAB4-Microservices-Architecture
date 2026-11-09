@@ -146,7 +146,7 @@ value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 			</Relationships>
 		</Entity_1>
 
-		<!-- Entity 2: Thermostat Dial (Rotary Encoder on GPIO 17 & 27) -->
+		<!-- Entity 2: Thermostat Dial (Rotary Encoder on GPIO 20 & 21) -->
 		<Entity_2>
 			<Descriptive_Metadata>
 				<ID>Entity_TempSensor</ID>
@@ -155,7 +155,7 @@ value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 				<Vendor>RotaryEncoder</Vendor>
 				<Category>Hardware</Category>
 				<Type>Sensor</Type>
-				<Description>Reads simulated thermostat temperature dial via Rotary Encoder on GPIO 17 and 27</Description>
+				<Description>Reads simulated thermostat temperature dial via Rotary Encoder on GPIO 20 and 21</Description>
 			</Descriptive_Metadata>
 			<Services>
 				<Service_1>
@@ -182,8 +182,8 @@ value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 					<OutputDescription>value</OutputDescription>
 					<OutputType>int</OutputType>
 					<Service_Formula><![CDATA[
-int clkPin = 17;
-int dtPin = 27;
+int clkPin = 20;
+int dtPin = 21;
 wiringPiSetupGpio();
 pinMode(clkPin, INPUT);
 pinMode(dtPin, INPUT);
@@ -275,7 +275,7 @@ digitalWrite(pin, (state != 0) ? HIGH : LOW);
 			</Relationships>
 		</Entity_3>
 
-		<!-- Entity 4: Cooling / Fan Actuator (Green LED on GPIO 13) -->
+		<!-- Entity 4: Cooling / Fan Actuator (Green LED on GPIO 12) -->
 		<Entity_4>
 			<Descriptive_Metadata>
 				<ID>Entity_CoolingLED</ID>
@@ -284,7 +284,7 @@ digitalWrite(pin, (state != 0) ? HIGH : LOW);
 				<Vendor>Generic</Vendor>
 				<Category>Hardware</Category>
 				<Type>Actuator</Type>
-				<Description>Green Cooling/Fan status LED connected to GPIO 13</Description>
+				<Description>Green Cooling/Fan status LED connected to GPIO 12</Description>
 			</Descriptive_Metadata>
 			<Services>
 				<Service_1>
@@ -311,7 +311,7 @@ digitalWrite(pin, (state != 0) ? HIGH : LOW);
 					<OutputDescription></OutputDescription>
 					<OutputType>void</OutputType>
 					<Service_Formula><![CDATA[
-int pin = 13;
+int pin = 12;
 wiringPiSetupGpio();
 pinMode(pin, OUTPUT);
 digitalWrite(pin, (state != 0) ? HIGH : LOW);

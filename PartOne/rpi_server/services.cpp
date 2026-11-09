@@ -90,9 +90,9 @@ std::vector<ServiceDescriptor> get_available_services(const std::string& rpi_id)
     return {
         {rpi_id, "Calibrate_Sensors", 0, {}, "int", "Calibrates ADS1115 ADC & Rotary Encoder baseline. Returns 1 on success."},
         {rpi_id, "Read_Light_Level", 0, {}, "int", "Reads ambient light intensity from LDR on ADS1115 Channel A0. Returns percentage 0-100."},
-        {rpi_id, "Read_Temperature", 1, {"scale"}, "int", "Reads simulated thermostat temperature dial from Rotary Encoder on GPIO 17/27. Argument: 'C' or 'F'."},
+        {rpi_id, "Read_Temperature", 1, {"scale"}, "int", "Reads simulated thermostat temperature dial from Rotary Encoder on GPIO 20/21. Argument: 'C' or 'F'."},
         {rpi_id, "Set_Alarm_LED", 1, {"state"}, "void", "Controls Red Alarm LED on GPIO 16 (1 = ON, 0 = OFF)."},
-        {rpi_id, "Set_Cooling_Indicator", 1, {"state"}, "void", "Controls Green Cooling LED on GPIO 13 (1 = ON, 0 = OFF)."},
+        {rpi_id, "Set_Cooling_Indicator", 1, {"state"}, "void", "Controls Green Cooling LED on GPIO 12 (1 = ON, 0 = OFF)."},
         {rpi_id, "Trigger_Buzzer", 1, {"duration_ms"}, "void", "Emits an audible buzzer alert for the specified duration in ms."}
     };
 }
@@ -159,7 +159,7 @@ void init_hardware() {
     s_encoder_thread.detach();
 
     s_hardware_initialized = true;
-    std::cout << "[Hardware] Hardware initialized: ADS1115 (I2C 0x48), Rotary Encoder (GPIO 17/27), LEDs (GPIO 16/13)." << std::endl;
+    std::cout << "[Hardware] Hardware initialized: ADS1115 (I2C 0x48), Rotary Encoder (GPIO 20/21), LEDs (GPIO 16/12)." << std::endl;
 }
 
 // ADS1115 16-bit I2C ADC reader (Channel A0 - A3)

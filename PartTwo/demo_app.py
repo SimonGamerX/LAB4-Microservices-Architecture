@@ -88,7 +88,7 @@ def run_automated_demo(rpi_ip):
     send_service_call(rpi_ip, "Set_Alarm_LED", "(0)")
     time.sleep(1)
 
-    # 4. Test Cooling Actuator (Green LED on GPIO 13)
+    # 4. Test Cooling Actuator (Green LED on GPIO 12)
     print("\n--- 5. Invoking Set_Cooling_Indicator(1) [Turn ON] ---")
     send_service_call(rpi_ip, "Set_Cooling_Indicator", "(1)")
     time.sleep(2)

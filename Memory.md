@@ -22,9 +22,9 @@ Transition the Virtual Smart Space (VSS) from monolithic embedded code (Labs 1�
 2. **Red GPIO Extension Board (T-Cobbler)** + Ribbon Cable (in breadboard).
 3. **ADS1115 ADC Breakout Board** (16-bit 4-channel I2C ADC module; address 0x48 on SDA=GPIO2, SCL=GPIO3).
 4. **Photoresistor (LDR)** + 10kΩ resistor (Ambient light sensing on ADS1115 Channel A0 — 0 jumper wires).
-5. **KY-040 5-Pin Rotary Encoder** (Simulated room thermostat dial on GPIO 17 & 27).
+5. **KY-040 5-Pin Rotary Encoder** (Simulated room thermostat dial: CLK on GPIO 20, DT on GPIO 21).
 6. **Red LED** (Safety / Alarm indicator on GPIO 16 with 220Ω resistor).
-7. **Green LED** (Cooling / Fan indicator on GPIO 13 with 220Ω resistor).
+7. **Green LED** (Cooling / Fan indicator on GPIO 12 with 220Ω resistor).
 8. **Minimal Jumper Wires** (12 wires total across the entire breadboard).
 9. **Laptop** (Edge layer, web dashboard).
 
@@ -43,11 +43,11 @@ Transition the Virtual Smart Space (VSS) from monolithic embedded code (Labs 1�
 | **10kΩ Pull-down** | Lead 1 to 2 | Channel A0 | Lead 1 in Row 26 (A0), Lead 2 in `(-)` Rail |
 | **Rotary Encoder `+`**| `+` | — | Breadboard Red `(+)` Rail |
 | **Rotary Encoder `GND`**| `GND` | — | Breadboard Blue `(-)` Rail |
-| **Rotary Encoder `CLK`**| `CLK` | `GPIO17` (Pin 11) | Breadboard / direct wire |
-| **Rotary Encoder `DT`** | `DT` | `GPIO27` (Pin 13) | Breadboard / direct wire |
+| **Rotary Encoder `CLK`**| `CLK` | `GPIO20` (Pin 38) | Breadboard / direct wire |
+| **Rotary Encoder `DT`** | `DT` | `GPIO21` (Pin 40) | Breadboard / direct wire |
 | **Rotary Encoder `SW`** | `SW` | — | *Unconnected* |
 | **Red LED (Alarm)** | Anode (+) | `GPIO16` (Pin 36) | Long leg in Row 11; short leg via 220Ω to `(-)` Rail |
-| **Green LED (Cooling)**| Anode (+) | `GPIO13` (Pin 33) | Long leg in Row 14; short leg via 220Ω to `(-)` Rail |
+| **Green LED (Cooling)**| Anode (+) | `GPIO12` (Pin 32) | Long leg in Row 14; short leg via 220Ω to `(-)` Rail |
 
 ---
 
@@ -123,8 +123,8 @@ LAB4/
 ---
 
 ## 5. Summary of Actuators & Condition Scenarios
-- **Green LED (Cooling / Fan)**: Controlled via `Set_Cooling_Indicator(state)`.
+- **Green LED (Cooling / Fan)**: Controlled via `Set_Cooling_Indicator(state)` on GPIO 12.
   *Demo rule*: `IF Read_Temperature > 28 DO Set_Cooling_Indicator 1` (Turning the rotary encoder past 28°C turns on the cooling indicator).
-- **Red LED (Alarm / Danger)**: Controlled via `Set_Alarm_LED(state)`.
+- **Red LED (Alarm / Danger)**: Controlled via `Set_Alarm_LED(state)` on GPIO 16.
   *Demo rule*: `IF Read_Temperature > 35 DO Set_Alarm_LED 1` (Overheat alarm) or `IF Read_Light_Level < 15 DO Set_Alarm_LED 1` (Intrusion / Darkness alarm).
 - **Calibration**: `Calibrate_Sensors()` flashes both LEDs for 250ms to signal hardware operational status.

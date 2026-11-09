@@ -22,16 +22,16 @@ std::vector<ServiceDescriptor> get_available_services(const std::string& rpi_id)
 
 // Actuator Pin Definitions (Lab 4)
 constexpr int PIN_RED_LED      = 16;  // Red LED (Alarm Actuator, RPi Pin 36)
-constexpr int PIN_GREEN_LED    = 13;  // Green LED (Cooling / Fan Actuator, RPi Pin 33)
-constexpr int PIN_BUZZER       = 21;  // Optional buzzer pin (RPi Pin 40)
+constexpr int PIN_GREEN_LED    = 12;  // Green LED (Cooling / Fan Actuator, RPi Pin 32)
+constexpr int PIN_BUZZER       = 26;  // Optional buzzer pin (RPi Pin 37)
 
 // ADS1115 16-bit I2C ADC Configuration (I2C: SDA=GPIO2, SCL=GPIO3)
 constexpr int ADS1115_I2C_ADDR = 0x48; // Default I2C address with ADDR tied to GND
 constexpr int ADC_CH_LIGHT     = 0;    // Photoresistor (LDR) on Channel A0
 
 // KY-040 Rotary Encoder Pin Definitions (Simulated Thermostat Temperature Dial)
-constexpr int PIN_ENCODER_CLK  = 17;   // Rotary Encoder CLK (RPi Pin 11)
-constexpr int PIN_ENCODER_DT   = 27;   // Rotary Encoder DT  (RPi Pin 13)
+constexpr int PIN_ENCODER_CLK  = 20;   // Rotary Encoder CLK (RPi Pin 38)
+constexpr int PIN_ENCODER_DT   = 21;   // Rotary Encoder DT  (RPi Pin 40)
 constexpr int PIN_ENCODER_SW   = 22;   // Rotary Encoder Switch (Optional, RPi Pin 15)
 
 // Service functions (C/C++ implementations)
