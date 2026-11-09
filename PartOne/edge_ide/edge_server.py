@@ -49,15 +49,18 @@ def query_rpi_services(host, port):
 
 def invoke_rpi_service(host, port, service_name, param_val=""):
     """Sends a service API call to the RPi C/C++ backend."""
-    url = f"http://{host}:{port}/call"
+    # Pass service_name and param in both query string and JSON body for maximum robustness
+    query_str = urllib.parse.urlencode({"service_name": service_name, "param": str(param_val)})
+    url = f"http://{host}:{port}/call?{query_str}"
     payload = json.dumps({"service_name": service_name, "param": str(param_val)}).encode("utf-8")
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
     try:
         t0 = time.time()
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
+        with urllib.request.urlopen(req, timeout=4.0) as resp:
             latency_ms = int((time.time() - t0) * 1000)
             if resp.status == 200:
-                res_data = json.loads(resp.read().decode("utf-8"))
+                raw_body = resp.read().decode("utf-8")
+                res_data = json.loads(raw_body)
                 res_data["latency_ms"] = latency_ms
                 return res_data
     except Exception as e:
@@ -128,9 +131,12 @@ def execute_composed_program(composition):
                     "result": res_b
                 })
                 step_log["status"] = "SUCCESS" if res_b.get("status") == "SUCCESS" else "FAILED"
+                if res_b.get("status") != "SUCCESS":
+                    step_log["error"] = res_b.get("message", "Service B failed.")
+                    overall_success = False
             else:
                 step_log["status"] = "FAILED_PREREQUISITE"
-                step_log["error"] = f"Service {srv_a['name']} failed; Service {srv_b['name']} aborted per order constraint."
+                step_log["error"] = res_a.get("message") or f"Service {srv_a['name']} failed; Service {srv_b['name']} aborted per order constraint."
                 overall_success = False
 
         elif rule_type == "condition":
@@ -177,6 +183,8 @@ def execute_composed_program(composition):
                             "result": res_b
                         })
                         step_log["status"] = "CONDITION_MET_AND_EXECUTED"
+                        if res_b.get("status") != "SUCCESS":
+                            step_log["error"] = res_b.get("message", "Service B failed.")
                     else:
                         step_log["status"] = "CONDITION_NOT_MET_SKIPPED"
                 except (ValueError, TypeError) as ex:
@@ -184,6 +192,7 @@ def execute_composed_program(composition):
                     step_log["error"] = f"Return value {ret_val} could not be compared with threshold."
             else:
                 step_log["status"] = "FAILED_EVALUATION"
+                step_log["error"] = res_a.get("message") or f"Evaluation of service {srv_a['name']} failed."
                 overall_success = False
 
         trace.append(step_log)

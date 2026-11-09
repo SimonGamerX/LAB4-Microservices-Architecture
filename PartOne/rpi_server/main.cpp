@@ -42,6 +42,17 @@ std::string extract_json_field(const std::string& json, const std::string& field
     return json.substr(pos, end - pos);
 }
 
+// Helper function to extract query parameter from URL query string
+std::string extract_query_param(const std::string& query, const std::string& key) {
+    std::string needle = key + "=";
+    size_t pos = query.find(needle);
+    if (pos == std::string::npos) return "";
+    pos += needle.length();
+    size_t end = query.find('&', pos);
+    if (end == std::string::npos) end = query.length();
+    return query.substr(pos, end - pos);
+}
+
 // Service dispatcher function
 std::string execute_service_call(const std::string& service_name, const std::string& arg_str) {
     std::ostringstream response;
@@ -101,19 +112,63 @@ std::string execute_service_call(const std::string& service_name, const std::str
 
 // Handle HTTP client request
 void handle_client(SOCKET client_socket) {
+    std::string request;
     char buffer[4096];
-    int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received <= 0) {
+    size_t content_length = 0;
+    bool headers_complete = false;
+
+    // Loop until full HTTP request including Content-Length body is received
+    while (true) {
+        int bytes = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+        if (bytes <= 0) break;
+        request.append(buffer, bytes);
+
+        if (!headers_complete) {
+            size_t header_end = request.find("\r\n\r\n");
+            if (header_end != std::string::npos) {
+                headers_complete = true;
+                // Parse Content-Length header case-insensitively
+                std::string lower_req = request;
+                std::transform(lower_req.begin(), lower_req.end(), lower_req.begin(), ::tolower);
+                size_t cl_pos = lower_req.find("content-length:");
+                if (cl_pos != std::string::npos) {
+                    size_t val_start = cl_pos + 15;
+                    while (val_start < lower_req.size() && lower_req[val_start] == ' ') val_start++;
+                    size_t val_end = lower_req.find("\r\n", val_start);
+                    if (val_end != std::string::npos) {
+                        content_length = std::stoul(lower_req.substr(val_start, val_end - val_start));
+                    }
+                }
+            }
+        }
+
+        if (headers_complete) {
+            size_t header_end = request.find("\r\n\r\n");
+            size_t body_len = request.size() - (header_end + 4);
+            if (body_len >= content_length) {
+                break; // Fully received headers and body
+            }
+        }
+    }
+
+    if (request.empty()) {
         closesocket(client_socket);
         return;
     }
-    buffer[bytes_received] = '\0';
-    std::string request(buffer);
 
-    // Extract HTTP method and path
-    std::string method, path;
+    // Extract HTTP method and raw path
+    std::string method, raw_path;
     std::istringstream req_stream(request);
-    req_stream >> method >> path;
+    req_stream >> method >> raw_path;
+
+    // Separate clean path from query string
+    std::string path = raw_path;
+    std::string query_string;
+    size_t q_pos = raw_path.find('?');
+    if (q_pos != std::string::npos) {
+        path = raw_path.substr(0, q_pos);
+        query_string = raw_path.substr(q_pos + 1);
+    }
 
     std::string response_body;
     std::string content_type = "application/json";
@@ -149,15 +204,28 @@ void handle_client(SOCKET client_socket) {
         json << "]}";
         response_body = json.str();
     }
-    else if (method == "POST" && (path == "/call" || path == "/api/call")) {
+    else if (path == "/call" || path == "/api/call") {
         // Find body after double CRLF
         size_t body_pos = request.find("\r\n\r\n");
         std::string body = (body_pos != std::string::npos) ? request.substr(body_pos + 4) : "";
+
+        // 1. Extract from JSON body
         std::string service_name = extract_json_field(body, "service_name");
         std::string param_val = extract_json_field(body, "param");
         if (param_val.empty()) {
             param_val = extract_json_field(body, "value");
         }
+
+        // 2. Fallback to URL query parameters
+        if (service_name.empty() && !query_string.empty()) {
+            service_name = extract_query_param(query_string, "service_name");
+            if (service_name.empty()) service_name = extract_query_param(query_string, "service");
+            if (param_val.empty()) param_val = extract_query_param(query_string, "param");
+            if (param_val.empty()) param_val = extract_query_param(query_string, "value");
+        }
+
+        std::cout << "[Server] Executing Service Call: '" << service_name 
+                  << "' | Param: '" << param_val << "'" << std::endl;
 
         response_body = execute_service_call(service_name, param_val);
     }
@@ -166,7 +234,7 @@ void handle_client(SOCKET client_socket) {
     }
     else {
         status_code = 404;
-        response_body = "{\"status\":\"ERROR\",\"message\":\"Endpoint not found\"}";
+        response_body = "{\"status\":\"ERROR\",\"message\":\"Endpoint not found: " + path + "\"}";
     }
 
     std::ostringstream http_response;

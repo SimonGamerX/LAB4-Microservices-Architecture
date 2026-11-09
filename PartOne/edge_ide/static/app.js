@@ -257,7 +257,7 @@ function displayResults(data) {
   traceLog.innerHTML = "";
   (data.trace || []).forEach((step) => {
     let css = "log-success";
-    if (step.status.includes("FAILED")) css = "log-error";
+    if (step.status.includes("FAILED") || step.status.includes("ERROR")) css = "log-error";
     if (step.status.includes("SKIPPED")) css = "log-skip";
 
     let text = `[Rule ${step.step_index}] ${step.description}\n`;
@@ -270,8 +270,20 @@ function displayResults(data) {
 
     if (step.actions) {
       step.actions.forEach((a) => {
-        text += `-> Call ${a.service}(${a.input}) = ${JSON.stringify(a.result.return_value)} (${a.result.latency_ms || 0}ms)\n`;
+        let valStr = "";
+        if (a.result && a.result.return_value !== undefined) {
+          valStr = JSON.stringify(a.result.return_value);
+        } else if (a.result && a.result.message) {
+          valStr = `ERROR: ${a.result.message}`;
+        } else {
+          valStr = "undefined";
+        }
+        text += `-> Call ${a.service}(${a.input}) = ${valStr} (${(a.result && a.result.latency_ms) || 0}ms)\n`;
       });
+    }
+
+    if (step.error) {
+      text += `-> Detail: ${step.error}\n`;
     }
 
     appendLog(text, css);
