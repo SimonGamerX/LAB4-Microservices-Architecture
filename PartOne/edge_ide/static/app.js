@@ -53,10 +53,10 @@ async function scanServices() {
     const node = (data.nodes && data.nodes[0]) || {};
 
     if (node.status === "ONLINE") {
-      statusPill.textContent = "Online";
+      statusPill.textContent = "NODE: ONLINE";
       statusPill.className = "pill pill-online";
     } else {
-      statusPill.textContent = "Offline";
+      statusPill.textContent = "NODE: OFFLINE";
       statusPill.className = "pill pill-offline";
     }
 
@@ -70,7 +70,7 @@ async function scanServices() {
 
     renderServices(services);
   } catch (e) {
-    statusPill.textContent = "Offline";
+    statusPill.textContent = "NODE: OFFLINE";
     statusPill.className = "pill pill-offline";
   }
 }
@@ -78,7 +78,7 @@ async function scanServices() {
 async function updateNodes() {
   const host = nodeHost.value.trim() || "127.0.0.1";
   const port = parseInt(nodePort.value.trim(), 10) || 8080;
-  statusPill.textContent = "...";
+  statusPill.textContent = "CONNECTING...";
   await fetch("/api/config_nodes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

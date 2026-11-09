@@ -3,23 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lab 4 - Mini-IDE</title>
+  <title>Lab 4 - Smart Space Mini-IDE</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
     <!-- Header -->
     <header class="header">
-      <div>
-        <h1>Lab 4: Smart Space Mini-IDE</h1>
-        <p class="sub">Service Composition & Edge Orchestration</p>
+      <div class="header-left">
+        <div class="brand-badge">/</div>
+        <div>
+          <h1>Smart Space Mini-IDE</h1>
+          <p class="sub">Service Composition & Edge Orchestration (Lab 4)</p>
+        </div>
       </div>
       <div class="rpi-bar">
-        <span>RPi:</span>
-        <input type="text" id="node-host" value="127.0.0.1" style="width: 110px;">
-        <input type="number" id="node-port" value="8080" style="width: 65px;">
-        <button id="btn-connect" class="btn btn-secondary">Connect</button>
-        <span id="node-status-pill" class="pill pill-offline">Offline</span>
+        <div class="input-field-group">
+          <label for="node-host">RPI HOST</label>
+          <input type="text" id="node-host" value="127.0.0.1" style="width: 120px;">
+        </div>
+        <div class="input-field-group">
+          <label for="node-port">PORT</label>
+          <input type="number" id="node-port" value="8080" style="width: 75px;">
+        </div>
+        <button id="btn-connect" class="btn btn-connect">Connect</button>
+        <span id="node-status-pill" class="pill pill-offline">NODE: OFFLINE</span>
       </div>
     </header>
 
@@ -27,7 +35,7 @@
     <section class="section">
       <div class="section-title">
         <h2>1. Available Services (Vectors)</h2>
-        <span id="service-count">0 found</span>
+        <span id="service-count" class="counter-badge">0 found</span>
       </div>
       <div id="service-list" class="vector-grid">
         <div class="empty">Scanning for services...</div>
