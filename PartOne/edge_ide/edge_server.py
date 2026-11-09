@@ -16,6 +16,7 @@ Functions:
 import sys
 import os
 import json
+import socket
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -39,7 +40,7 @@ def query_rpi_services(host, port):
     url = f"http://{host}:{port}/services"
     req = urllib.request.Request(url, method="GET")
     try:
-        with urllib.request.urlopen(req, timeout=2.5) as resp:
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
             if resp.status == 200:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data
@@ -48,21 +49,60 @@ def query_rpi_services(host, port):
     return None
 
 def invoke_rpi_service(host, port, service_name, param_val=""):
-    """Sends a service API call to the RPi C/C++ backend."""
-    # Pass service_name and param in both query string and JSON body for maximum robustness
-    query_str = urllib.parse.urlencode({"service_name": service_name, "param": str(param_val)})
-    url = f"http://{host}:{port}/call?{query_str}"
-    payload = json.dumps({"service_name": service_name, "param": str(param_val)}).encode("utf-8")
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+    """
+    Sends a service API call to the RPi C/C++ backend.
+    Sends headers + JSON body together in one single atomic TCP segment to ensure
+    the RPi server's single-buffer socket reader parses service_name and params correctly.
+    """
+    payload_str = json.dumps({"service_name": service_name, "param": str(param_val)})
+    body_bytes = payload_str.encode("utf-8")
+
+    # Clean exact path /call without query params so it matches path == "/call" on all RPi builds
+    http_packet = (
+        f"POST /call HTTP/1.1\r\n"
+        f"Host: {host}:{port}\r\n"
+        f"Content-Type: application/json\r\n"
+        f"Content-Length: {len(body_bytes)}\r\n"
+        f"Connection: close\r\n\r\n"
+    ).encode("utf-8") + body_bytes
+
     try:
         t0 = time.time()
-        with urllib.request.urlopen(req, timeout=4.0) as resp:
-            latency_ms = int((time.time() - t0) * 1000)
-            if resp.status == 200:
-                raw_body = resp.read().decode("utf-8")
-                res_data = json.loads(raw_body)
-                res_data["latency_ms"] = latency_ms
-                return res_data
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(4.0)
+        sock.connect((host, int(port)))
+        sock.sendall(http_packet)
+
+        response_bytes = b""
+        while True:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            response_bytes += chunk
+        sock.close()
+
+        latency_ms = int((time.time() - t0) * 1000)
+        resp_str = response_bytes.decode("utf-8", errors="replace")
+
+        # Split HTTP headers and body
+        if "\r\n\r\n" in resp_str:
+            header_part, body_part = resp_str.split("\r\n\r\n", 1)
+        else:
+            header_part = ""
+            body_part = resp_str
+
+        # Check for 404 or other HTTP error codes
+        first_line = header_part.split("\r\n")[0] if header_part else ""
+        if first_line and (" 200" not in first_line):
+            return {
+                "status": "ERROR",
+                "message": f"{first_line}: {body_part.strip()}",
+                "latency_ms": latency_ms
+            }
+
+        res_data = json.loads(body_part)
+        res_data["latency_ms"] = latency_ms
+        return res_data
     except Exception as e:
         return {"status": "ERROR", "message": str(e), "latency_ms": 0}
 
