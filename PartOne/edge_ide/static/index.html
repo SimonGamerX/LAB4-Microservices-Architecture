@@ -54,6 +54,18 @@
         </div>
       </div>
 
+      <!-- Validation Error / Alarm Box -->
+      <div id="composer-error-box" class="error-banner" style="display: none;">
+        <div class="error-banner-content">
+          <span class="error-icon">🚨</span>
+          <div class="error-text">
+            <strong id="error-title">Invalid Service Argument</strong>
+            <p id="error-desc">Please correct the highlighted argument before running the application.</p>
+          </div>
+        </div>
+        <button id="btn-close-error" class="btn-error-close" title="Dismiss">✕</button>
+      </div>
+
       <div id="rules-container" class="rules-list">
         <!-- Dynamic rules inserted here -->
       </div>

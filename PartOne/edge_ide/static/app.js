@@ -24,6 +24,10 @@ const btnClear = document.getElementById("btn-clear-rules");
 const btnRun = document.getElementById("btn-run-app");
 const traceLog = document.getElementById("trace-log");
 const btnClearTrace = document.getElementById("btn-clear-trace");
+const errorBox = document.getElementById("composer-error-box");
+const errorTitle = document.getElementById("error-title");
+const errorDesc = document.getElementById("error-desc");
+const btnCloseError = document.getElementById("btn-close-error");
 
 document.addEventListener("DOMContentLoaded", () => {
   scanServices();
@@ -37,8 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
   btnAddCond.addEventListener("click", () => addConditionRule());
   btnClear.addEventListener("click", () => {
     rules = [];
+    hideErrorBox();
     renderRules();
   });
+
+  if (btnCloseError) {
+    btnCloseError.addEventListener("click", hideErrorBox);
+  }
 
   btnRun.addEventListener("click", runApplication);
   btnClearTrace.addEventListener("click", () => {
@@ -126,9 +135,141 @@ function renderServices(services) {
   });
 }
 
+/* ==========================================================================
+   Argument Validation & Error / Alarm Box Functions
+   ========================================================================== */
+
+function getCleanServiceName(srvKey) {
+  if (!srvKey) return "";
+  return srvKey.includes(":") ? srvKey.split(":")[1] : srvKey;
+}
+
+function validateServiceArgument(serviceKey, rawArg) {
+  const sName = getCleanServiceName(serviceKey);
+  const arg = (rawArg || "").trim();
+
+  if (sName === "Set_Alarm_LED" || sName === "Set_Cooling_Indicator") {
+    if (arg === "") {
+      return `Missing parameter for ${sName}. Expected '0' (OFF) or '1' (ON).`;
+    }
+    if (arg !== "0" && arg !== "1") {
+      return `Invalid argument '${rawArg}' for ${sName}. Expected '0' (OFF) or '1' (ON).`;
+    }
+  } else if (sName === "Read_Temperature") {
+    if (arg !== "" && arg !== "C" && arg !== "F" && arg !== "c" && arg !== "f") {
+      return `Invalid scale '${rawArg}' for Read_Temperature. Expected 'C' (Celsius) or 'F' (Fahrenheit).`;
+    }
+  }
+  return null;
+}
+
+function validateAllRules() {
+  clearValidationErrors();
+  let firstError = null;
+
+  for (let i = 0; i < rules.length; i++) {
+    const r = rules[i];
+    const ruleNum = i + 1;
+
+    if (r.type === "single") {
+      const err = validateServiceArgument(r.srv, r.arg);
+      if (err) {
+        firstError = {
+          ruleNum,
+          fieldId: `input-arg-${r.id}`,
+          message: `Rule #${ruleNum}: ${err}`
+        };
+        break;
+      }
+    } else if (r.type === "order") {
+      const errA = validateServiceArgument(r.srvA, r.argA);
+      if (errA) {
+        firstError = {
+          ruleNum,
+          fieldId: `input-argA-${r.id}`,
+          message: `Rule #${ruleNum} (First Service): ${errA}`
+        };
+        break;
+      }
+      const errB = validateServiceArgument(r.srvB, r.argB);
+      if (errB) {
+        firstError = {
+          ruleNum,
+          fieldId: `input-argB-${r.id}`,
+          message: `Rule #${ruleNum} (Second Service): ${errB}`
+        };
+        break;
+      }
+    } else if (r.type === "condition") {
+      const valStr = String(r.val !== undefined ? r.val : "").trim();
+      if (valStr === "" || isNaN(parseFloat(valStr))) {
+        firstError = {
+          ruleNum,
+          fieldId: `input-val-${r.id}`,
+          message: `Rule #${ruleNum}: Condition threshold '${r.val}' must be a valid numeric value.`
+        };
+        break;
+      }
+      const errB = validateServiceArgument(r.srvB, r.argB);
+      if (errB) {
+        firstError = {
+          ruleNum,
+          fieldId: `input-argB-${r.id}`,
+          message: `Rule #${ruleNum} (Action Service): ${errB}`
+        };
+        break;
+      }
+    }
+  }
+
+  if (firstError) {
+    showErrorBox("Invalid Service Argument Detected", firstError.message, firstError.fieldId);
+    return false;
+  }
+
+  hideErrorBox();
+  return true;
+}
+
+function showErrorBox(title, message, fieldId = null) {
+  if (errorBox && errorDesc) {
+    if (errorTitle) errorTitle.textContent = title;
+    errorDesc.textContent = message;
+    errorBox.style.display = "flex";
+  }
+
+  if (fieldId) {
+    const el = document.getElementById(fieldId);
+    if (el) {
+      el.classList.add("input-invalid");
+      el.focus();
+    }
+  }
+
+  appendLog(`[VALIDATION ALARM] ${message}`, "log-error");
+}
+
+function hideErrorBox() {
+  if (errorBox) {
+    errorBox.style.display = "none";
+  }
+  clearValidationErrors();
+}
+
+function clearValidationErrors() {
+  document.querySelectorAll(".input-invalid").forEach((el) => {
+    el.classList.remove("input-invalid");
+  });
+}
+
+/* ==========================================================================
+   Rule Composition & Rendering
+   ========================================================================== */
+
 function addSingleRule(srv = "RPi-1:Read_Temperature", arg = "C") {
+  hideErrorBox();
   rules.push({
-    id: "r_" + Date.now() + Math.random(),
+    id: "r_" + Date.now() + Math.random().toString(36).substr(2, 4),
     type: "single",
     srv,
     arg
@@ -142,8 +283,9 @@ function addOrderRule(
   srvB = "RPi-2:Set_Alarm_LED",
   argB = "1"
 ) {
+  hideErrorBox();
   rules.push({
-    id: "r_" + Date.now() + Math.random(),
+    id: "r_" + Date.now() + Math.random().toString(36).substr(2, 4),
     type: "order",
     srvA,
     argA,
@@ -160,8 +302,9 @@ function addConditionRule(
   srvB = "RPi-1:Set_Cooling_Indicator",
   argB = "1"
 ) {
+  hideErrorBox();
   rules.push({
-    id: "r_" + Date.now() + Math.random(),
+    id: "r_" + Date.now() + Math.random().toString(36).substr(2, 4),
     type: "condition",
     srvA,
     op,
@@ -187,7 +330,7 @@ function renderRules() {
       row.innerHTML = `
         <span class="rule-tag">RUN</span>
         ${buildDropdown(r.id, "srv", r.srv)}
-        <input type="text" placeholder="arg" value="${r.arg || ""}" style="width: 65px;" onchange="updateRule('${r.id}', 'arg', this.value)">
+        <input type="text" id="input-arg-${r.id}" placeholder="arg" value="${r.arg || ""}" style="width: 65px;" oninput="updateRule('${r.id}', 'arg', this.value)">
         <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
       `;
     } else if (r.type === "order") {
@@ -195,10 +338,10 @@ function renderRules() {
       row.innerHTML = `
         <span class="rule-tag">RUN</span>
         ${buildDropdown(r.id, "srvA", r.srvA)}
-        <input type="text" placeholder="arg" value="${r.argA || ""}" style="width: 65px;" onchange="updateRule('${r.id}', 'argA', this.value)">
+        <input type="text" id="input-argA-${r.id}" placeholder="arg" value="${r.argA || ""}" style="width: 65px;" oninput="updateRule('${r.id}', 'argA', this.value)">
         <span class="rule-tag">THEN</span>
         ${buildDropdown(r.id, "srvB", r.srvB)}
-        <input type="text" placeholder="arg" value="${r.argB || ""}" style="width: 65px;" onchange="updateRule('${r.id}', 'argB', this.value)">
+        <input type="text" id="input-argB-${r.id}" placeholder="arg" value="${r.argB || ""}" style="width: 65px;" oninput="updateRule('${r.id}', 'argB', this.value)">
         <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
       `;
     } else {
@@ -212,10 +355,10 @@ function renderRules() {
           <option value="==" ${r.op === "==" ? "selected" : ""}>==</option>
           <option value="!=" ${r.op === "!=" ? "selected" : ""}>!=</option>
         </select>
-        <input type="number" value="${r.val}" style="width: 75px;" onchange="updateRule('${r.id}', 'val', this.value)">
+        <input type="number" id="input-val-${r.id}" value="${r.val}" style="width: 75px;" oninput="updateRule('${r.id}', 'val', this.value)">
         <span class="rule-tag">DO</span>
         ${buildDropdown(r.id, "srvB", r.srvB)}
-        <input type="text" placeholder="arg" value="${r.argB || ""}" style="width: 65px;" onchange="updateRule('${r.id}', 'argB', this.value)">
+        <input type="text" id="input-argB-${r.id}" placeholder="arg" value="${r.argB || ""}" style="width: 65px;" oninput="updateRule('${r.id}', 'argB', this.value)">
         <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
       `;
     }
@@ -271,7 +414,6 @@ function resolveService(srvKey) {
     }
   }
 
-  // Physical connection target is the single connected Raspberry Pi
   const host = nodeHost.value.trim() || "127.0.0.1";
   const port = parseInt(nodePort.value.trim(), 10) || 8080;
 
@@ -281,16 +423,39 @@ function resolveService(srvKey) {
 function updateRule(id, field, val) {
   const r = rules.find((x) => x.id === id);
   if (r) r[field] = val;
+
+  // Clear visual invalid indicator on the input that is currently being edited
+  let targetFieldId = "";
+  if (field === "arg") targetFieldId = `input-arg-${id}`;
+  else if (field === "argA") targetFieldId = `input-argA-${id}`;
+  else if (field === "argB") targetFieldId = `input-argB-${id}`;
+  else if (field === "val") targetFieldId = `input-val-${id}`;
+
+  if (targetFieldId) {
+    const el = document.getElementById(targetFieldId);
+    if (el) el.classList.remove("input-invalid");
+  }
+
+  // If no more invalid inputs exist on page, dismiss error box
+  if (document.querySelectorAll(".input-invalid").length === 0 && errorBox) {
+    errorBox.style.display = "none";
+  }
 }
 
 function delRule(id) {
   rules = rules.filter((x) => x.id !== id);
+  hideErrorBox();
   renderRules();
 }
 
 async function runApplication() {
   if (rules.length === 0) {
-    alert("Add at least one rule first.");
+    showErrorBox("No Rules Defined", "Add at least one rule to your composition before running.");
+    return;
+  }
+
+  // Run comprehensive argument validation before sending requests
+  if (!validateAllRules()) {
     return;
   }
 
@@ -301,7 +466,7 @@ async function runApplication() {
     rules: rules.map((r, i) => {
       if (r.type === "single") {
         const tgt = resolveService(r.srv);
-        const paramStr = r.arg || "";
+        const paramStr = (r.arg || "").trim();
         const descArg = paramStr ? `(${paramStr})` : "";
         return {
           type: "single",
@@ -324,8 +489,8 @@ async function runApplication() {
       } else if (r.type === "order") {
         const tgtA = resolveService(r.srvA);
         const tgtB = resolveService(r.srvB);
-        const paramAStr = r.argA || "";
-        const paramBStr = r.argB || "";
+        const paramAStr = (r.argA || "").trim();
+        const paramBStr = (r.argB || "").trim();
         const descA = paramAStr ? `(${paramAStr})` : "";
         const descB = paramBStr ? `(${paramBStr})` : "";
         return {
@@ -349,7 +514,7 @@ async function runApplication() {
       } else {
         const tgtA = resolveService(r.srvA);
         const tgtB = resolveService(r.srvB);
-        const paramBStr = r.argB || "";
+        const paramBStr = (r.argB || "").trim();
         const descB = paramBStr ? `(${paramBStr})` : "";
         return {
           type: "condition",
@@ -383,7 +548,17 @@ async function runApplication() {
     });
     const result = await res.json();
     displayResults(result);
+
+    // If any execution error occurred on the RPi node, display it in the error box
+    const failedStep = (result.trace || []).find(
+      (s) => s.status && (s.status.includes("FAILED") || s.status.includes("ERROR"))
+    );
+    if (failedStep) {
+      const errMsg = failedStep.error || `Execution failed at Step #${failedStep.step_index}`;
+      showErrorBox("RPi Execution Failure", errMsg);
+    }
   } catch (e) {
+    showErrorBox("Connection Error", `Failed to communicate with Edge Orchestrator: ${e.message}`);
     appendLog(`[ERROR] Failed to execute: ${e.message}`, "log-error");
   } finally {
     btnRun.disabled = false;

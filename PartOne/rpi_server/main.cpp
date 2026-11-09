@@ -72,31 +72,49 @@ std::string execute_service_call(const std::string& service_name, const std::str
                  << "\",\"rpi_id\":\"RPi-2\",\"return_value\":" << res << "}";
     }
     else if (service_name == "Read_Temperature") {
-        char scale = 'C';
-        if (!arg_str.empty() && (arg_str[0] == 'F' || arg_str[0] == 'f')) {
-            scale = 'F';
+        std::string clean = arg_str;
+        while (!clean.empty() && (clean.front() == ' ' || clean.front() == '\t')) clean.erase(clean.begin());
+        while (!clean.empty() && (clean.back() == ' ' || clean.back() == '\t')) clean.pop_back();
+
+        if (!clean.empty() && clean != "C" && clean != "F" && clean != "c" && clean != "f") {
+            response << "{\"status\":\"ERROR\",\"service\":\"" << service_name 
+                     << "\",\"message\":\"Invalid argument '" << arg_str << "' for Read_Temperature. Expected 'C' or 'F'.\"}";
+        } else {
+            char scale = (!clean.empty() && (clean[0] == 'F' || clean[0] == 'f')) ? 'F' : 'C';
+            int res = Read_Temperature(scale);
+            response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
+                     << "\",\"rpi_id\":\"RPi-1\",\"scale\":\"" << scale << "\",\"return_value\":" << res << "}";
         }
-        int res = Read_Temperature(scale);
-        response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"rpi_id\":\"RPi-1\",\"scale\":\"" << scale << "\",\"return_value\":" << res << "}";
     }
     else if (service_name == "Set_Alarm_LED") {
-        int state = 0;
-        if (!arg_str.empty()) {
-            state = std::atoi(arg_str.c_str());
+        std::string clean = arg_str;
+        while (!clean.empty() && (clean.front() == ' ' || clean.front() == '\t')) clean.erase(clean.begin());
+        while (!clean.empty() && (clean.back() == ' ' || clean.back() == '\t')) clean.pop_back();
+
+        if (clean != "0" && clean != "1") {
+            response << "{\"status\":\"ERROR\",\"service\":\"" << service_name 
+                     << "\",\"message\":\"Invalid argument '" << arg_str << "' for Set_Alarm_LED. Expected '0' (OFF) or '1' (ON).\"}";
+        } else {
+            int state = std::atoi(clean.c_str());
+            Set_Alarm_LED(state);
+            response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
+                     << "\",\"rpi_id\":\"RPi-2\",\"state\":" << state << ",\"return_value\":\"void\"}";
         }
-        Set_Alarm_LED(state);
-        response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"rpi_id\":\"RPi-2\",\"state\":" << state << ",\"return_value\":\"void\"}";
     }
     else if (service_name == "Set_Cooling_Indicator") {
-        int state = 0;
-        if (!arg_str.empty()) {
-            state = std::atoi(arg_str.c_str());
+        std::string clean = arg_str;
+        while (!clean.empty() && (clean.front() == ' ' || clean.front() == '\t')) clean.erase(clean.begin());
+        while (!clean.empty() && (clean.back() == ' ' || clean.back() == '\t')) clean.pop_back();
+
+        if (clean != "0" && clean != "1") {
+            response << "{\"status\":\"ERROR\",\"service\":\"" << service_name 
+                     << "\",\"message\":\"Invalid argument '" << arg_str << "' for Set_Cooling_Indicator. Expected '0' (OFF) or '1' (ON).\"}";
+        } else {
+            int state = std::atoi(clean.c_str());
+            Set_Cooling_Indicator(state);
+            response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
+                     << "\",\"rpi_id\":\"RPi-1\",\"state\":" << state << ",\"return_value\":\"void\"}";
         }
-        Set_Cooling_Indicator(state);
-        response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"rpi_id\":\"RPi-1\",\"state\":" << state << ",\"return_value\":\"void\"}";
     }
     else {
         response << "{\"status\":\"ERROR\",\"message\":\"Unknown service: " << service_name << "\"}";
