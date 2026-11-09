@@ -129,6 +129,13 @@ input:focus, select:focus {
 }
 
 /* Status Pill */
+.pill-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .pill {
   padding: 6px 12px;
   border-radius: 20px;

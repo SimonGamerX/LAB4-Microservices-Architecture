@@ -28,9 +28,10 @@ import time
 PORT = 5000
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
-# Known RPi endpoints (default to localhost:8080 for simulation; editable from UI)
+# Known RPi endpoints (default to localhost:8080 and 8081 for simulation; editable from UI)
 rpi_endpoints = [
-    {"rpi_id": "RPi-1", "host": "127.0.0.1", "port": 8080, "status": "UNKNOWN"}
+    {"rpi_id": "RPi-1", "host": "127.0.0.1", "port": 8080, "status": "UNKNOWN"},
+    {"rpi_id": "RPi-2", "host": "127.0.0.1", "port": 8081, "status": "UNKNOWN"}
 ]
 
 # Cache of discovered service vectors
@@ -160,6 +161,7 @@ def execute_composed_program(composition):
 
             res = invoke_rpi_service(srv["host"], srv["port"], srv["name"], srv.get("param", ""))
             step_log["actions"].append({
+                "rpi_id": srv.get("rpi_id", ""),
                 "service": srv["name"],
                 "target": f"{srv['host']}:{srv['port']}",
                 "input": srv.get("param", ""),
@@ -178,6 +180,7 @@ def execute_composed_program(composition):
             # Execute Service A
             res_a = invoke_rpi_service(srv_a["host"], srv_a["port"], srv_a["name"], srv_a.get("param", ""))
             step_log["actions"].append({
+                "rpi_id": srv_a.get("rpi_id", ""),
                 "service": srv_a["name"],
                 "target": f"{srv_a['host']}:{srv_a['port']}",
                 "input": srv_a.get("param", ""),
@@ -189,6 +192,7 @@ def execute_composed_program(composition):
                 time.sleep(0.1) # brief inter-call pacing
                 res_b = invoke_rpi_service(srv_b["host"], srv_b["port"], srv_b["name"], srv_b.get("param", ""))
                 step_log["actions"].append({
+                    "rpi_id": srv_b.get("rpi_id", ""),
                     "service": srv_b["name"],
                     "target": f"{srv_b['host']}:{srv_b['port']}",
                     "input": srv_b.get("param", ""),
@@ -212,6 +216,7 @@ def execute_composed_program(composition):
 
             res_a = invoke_rpi_service(srv_a["host"], srv_a["port"], srv_a["name"], srv_a.get("param", ""))
             step_log["actions"].append({
+                "rpi_id": srv_a.get("rpi_id", ""),
                 "service": srv_a["name"],
                 "target": f"{srv_a['host']}:{srv_a['port']}",
                 "input": srv_a.get("param", ""),
@@ -241,6 +246,7 @@ def execute_composed_program(composition):
                         time.sleep(0.1)
                         res_b = invoke_rpi_service(srv_b["host"], srv_b["port"], srv_b["name"], srv_b.get("param", ""))
                         step_log["actions"].append({
+                            "rpi_id": srv_b.get("rpi_id", ""),
                             "service": srv_b["name"],
                             "target": f"{srv_b['host']}:{srv_b['port']}",
                             "input": srv_b.get("param", ""),

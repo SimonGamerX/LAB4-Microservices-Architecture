@@ -19,15 +19,22 @@
       </div>
       <div class="rpi-bar">
         <div class="input-field-group">
-          <label for="node-host">RPI HOST</label>
-          <input type="text" id="node-host" value="127.0.0.1" style="width: 120px;">
+          <label for="node-host">HOST IP</label>
+          <input type="text" id="node-host" value="127.0.0.1" style="width: 110px;">
         </div>
         <div class="input-field-group">
-          <label for="node-port">PORT</label>
-          <input type="number" id="node-port" value="8080" style="width: 75px;">
+          <label for="node-port-1">RPI-1 PORT</label>
+          <input type="number" id="node-port-1" value="8080" style="width: 65px;">
+        </div>
+        <div class="input-field-group">
+          <label for="node-port-2">RPI-2 PORT</label>
+          <input type="number" id="node-port-2" value="8081" style="width: 65px;">
         </div>
         <button id="btn-connect" class="btn btn-connect">Connect</button>
-        <span id="node-status-pill" class="pill pill-offline">NODE: OFFLINE</span>
+        <div class="pill-group">
+          <span id="node-status-pill-1" class="pill pill-offline">RPI-1: OFFLINE</span>
+          <span id="node-status-pill-2" class="pill pill-offline">RPI-2: OFFLINE</span>
+        </div>
       </div>
     </header>
 

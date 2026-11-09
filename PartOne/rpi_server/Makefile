@@ -1,30 +1,25 @@
-CXX ?= g++
-CXXFLAGS ?= -O2 -Wall -std=c++17 -pthread
-TARGET = rpi_service_server
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -O2 -pthread
 
-SRCS = main.cpp services.cpp
-OBJS = $(SRCS:.cpp=.o)
-
-# Check if wiringPi library is available
-WIRINGPI_EXISTS := $(shell ldconfig -p | grep libwiringPi || true)
-
-ifneq ($(strip $(WIRINGPI_EXISTS)),)
-    LDFLAGS += -lwiringPi
-    CXXFLAGS += -DREAL_WIRINGPI=1
-    $(info [+] Found wiringPi on system. Linking against -lwiringPi.)
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    LIBS = -lwiringPi
 else
-    $(info [-] wiringPi not found on build host. Building in mock/simulation mode.)
+    LIBS = -lws2_32
 endif
 
-all: $(TARGET)
+TARGETS = rpi1_service_server rpi2_service_server rpi_service_server
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+all: $(TARGETS)
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+rpi1_service_server: main_rpi1.cpp services_rpi1.cpp services_rpi1.hpp
+	$(CXX) $(CXXFLAGS) main_rpi1.cpp services_rpi1.cpp $(LIBS) -o rpi1_service_server
+
+rpi2_service_server: main_rpi2.cpp services_rpi2.cpp services_rpi2.hpp
+	$(CXX) $(CXXFLAGS) main_rpi2.cpp services_rpi2.cpp $(LIBS) -o rpi2_service_server
+
+rpi_service_server: main.cpp services.cpp services.hpp
+	$(CXX) $(CXXFLAGS) main.cpp services.cpp $(LIBS) -o rpi_service_server
 
 clean:
-	rm -f $(OBJS) $(TARGET)
-
-.PHONY: all clean
+	rm -f $(TARGETS) *.exe *.o

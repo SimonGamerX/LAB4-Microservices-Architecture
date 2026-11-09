@@ -1,16 +1,26 @@
 let rules = [];
-const serviceOptions = [
-  "Calibrate_Sensors",
-  "Read_Light_Level",
-  "Read_Temperature",
-  "Set_Alarm_LED",
-  "Set_Cooling_Indicator"
+
+// Service options grouped by RPi node (populated by discovery, with standard defaults)
+let serviceOptions = [
+  { rpi_id: "RPi-1", name: "Read_Temperature", label: "[RPi-1] Read_Temperature (Dial)" },
+  { rpi_id: "RPi-1", name: "Set_Cooling_Indicator", label: "[RPi-1] Set_Cooling_Indicator (Green LED)" },
+  { rpi_id: "RPi-1", name: "Calibrate_Sensors", label: "[RPi-1] Calibrate_Sensors (Green LED Flash)" },
+  { rpi_id: "RPi-2", name: "Read_Light_Level", label: "[RPi-2] Read_Light_Level (LDR)" },
+  { rpi_id: "RPi-2", name: "Set_Alarm_LED", label: "[RPi-2] Set_Alarm_LED (Red LED)" },
+  { rpi_id: "RPi-2", name: "Calibrate_Sensors", label: "[RPi-2] Calibrate_Sensors (Red LED Flash)" }
+];
+
+let currentNodes = [
+  { rpi_id: "RPi-1", host: "127.0.0.1", port: 8080, status: "OFFLINE" },
+  { rpi_id: "RPi-2", host: "127.0.0.1", port: 8081, status: "OFFLINE" }
 ];
 
 const nodeHost = document.getElementById("node-host");
-const nodePort = document.getElementById("node-port");
+const nodePort1 = document.getElementById("node-port-1");
+const nodePort2 = document.getElementById("node-port-2");
 const btnConnect = document.getElementById("btn-connect");
-const statusPill = document.getElementById("node-status-pill");
+const statusPill1 = document.getElementById("node-status-pill-1");
+const statusPill2 = document.getElementById("node-status-pill-2");
 const serviceList = document.getElementById("service-list");
 const serviceCount = document.getElementById("service-count");
 const rulesContainer = document.getElementById("rules-container");
@@ -50,39 +60,74 @@ async function scanServices() {
     const res = await fetch("/api/discovery");
     const data = await res.json();
     const services = data.services || [];
-    const node = (data.nodes && data.nodes[0]) || {};
+    const nodes = data.nodes || [];
 
-    if (node.status === "ONLINE") {
-      statusPill.textContent = "NODE: ONLINE";
-      statusPill.className = "pill pill-online";
+    currentNodes = nodes;
+
+    const node1 = nodes.find((n) => n.rpi_id === "RPi-1") || nodes[0] || {};
+    const node2 = nodes.find((n) => n.rpi_id === "RPi-2") || nodes[1] || {};
+
+    if (node1.status === "ONLINE") {
+      statusPill1.textContent = "RPI-1: ONLINE";
+      statusPill1.className = "pill pill-online";
     } else {
-      statusPill.textContent = "NODE: OFFLINE";
-      statusPill.className = "pill pill-offline";
+      statusPill1.textContent = "RPI-1: OFFLINE";
+      statusPill1.className = "pill pill-offline";
+    }
+
+    if (node2.status === "ONLINE") {
+      statusPill2.textContent = "RPI-2: ONLINE";
+      statusPill2.className = "pill pill-online";
+    } else {
+      statusPill2.textContent = "RPI-2: OFFLINE";
+      statusPill2.className = "pill pill-offline";
     }
 
     if (services.length > 0) {
-      services.forEach((s) => {
-        if (!serviceOptions.includes(s.service_name)) {
-          serviceOptions.push(s.service_name);
-        }
-      });
+      updateServiceOptions(services);
     }
 
     renderServices(services);
   } catch (e) {
-    statusPill.textContent = "NODE: OFFLINE";
-    statusPill.className = "pill pill-offline";
+    statusPill1.textContent = "RPI-1: OFFLINE";
+    statusPill1.className = "pill pill-offline";
+    statusPill2.textContent = "RPI-2: OFFLINE";
+    statusPill2.className = "pill pill-offline";
   }
+}
+
+function updateServiceOptions(services) {
+  services.forEach((s) => {
+    const exists = serviceOptions.some(
+      (opt) => opt.rpi_id === s.rpi_id && opt.name === s.service_name
+    );
+    if (!exists) {
+      serviceOptions.push({
+        rpi_id: s.rpi_id,
+        name: s.service_name,
+        label: `[${s.rpi_id}] ${s.service_name}`
+      });
+    }
+  });
 }
 
 async function updateNodes() {
   const host = nodeHost.value.trim() || "127.0.0.1";
-  const port = parseInt(nodePort.value.trim(), 10) || 8080;
-  statusPill.textContent = "CONNECTING...";
+  const port1 = parseInt(nodePort1.value.trim(), 10) || 8080;
+  const port2 = parseInt(nodePort2.value.trim(), 10) || 8081;
+
+  statusPill1.textContent = "CONNECTING...";
+  statusPill2.textContent = "CONNECTING...";
+
   await fetch("/api/config_nodes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nodes: [{ rpi_id: "RPi-1", host, port }] })
+    body: JSON.stringify({
+      nodes: [
+        { rpi_id: "RPi-1", host, port: port1 },
+        { rpi_id: "RPi-2", host, port: port2 }
+      ]
+    })
   });
   await scanServices();
 }
@@ -90,7 +135,7 @@ async function updateNodes() {
 function renderServices(services) {
   serviceCount.textContent = `${services.length} found`;
   if (services.length === 0) {
-    serviceList.innerHTML = `<div class="empty">No services detected. Start the RPi server.</div>`;
+    serviceList.innerHTML = `<div class="empty">No services detected. Start the RPi servers (RPi-1 on 8080, RPi-2 on 8081).</div>`;
     return;
   }
 
@@ -102,13 +147,13 @@ function renderServices(services) {
     item.className = "vector-item";
     item.innerHTML = `
       <div class="vector-code">${vector}</div>
-      <div class="vector-desc">${s.description}</div>
+      <div class="vector-desc">${s.description} <span style="opacity: 0.6;">[${s.host}:${s.port}]</span></div>
     `;
     serviceList.appendChild(item);
   });
 }
 
-function addSingleRule(srv = "Calibrate_Sensors", arg = "") {
+function addSingleRule(srv = "RPi-1:Read_Temperature", arg = "C") {
   rules.push({
     id: "r_" + Date.now() + Math.random(),
     type: "single",
@@ -118,7 +163,12 @@ function addSingleRule(srv = "Calibrate_Sensors", arg = "") {
   renderRules();
 }
 
-function addOrderRule(srvA = "Calibrate_Sensors", argA = "", srvB = "Read_Temperature", argB = "C") {
+function addOrderRule(
+  srvA = "RPi-1:Read_Temperature",
+  argA = "C",
+  srvB = "RPi-2:Set_Alarm_LED",
+  argB = "1"
+) {
   rules.push({
     id: "r_" + Date.now() + Math.random(),
     type: "order",
@@ -130,7 +180,13 @@ function addOrderRule(srvA = "Calibrate_Sensors", argA = "", srvB = "Read_Temper
   renderRules();
 }
 
-function addConditionRule(srvA = "Read_Light_Level", op = "<", val = 30, srvB = "Set_Alarm_LED", argB = "1") {
+function addConditionRule(
+  srvA = "RPi-2:Read_Light_Level",
+  op = "<",
+  val = 30,
+  srvB = "RPi-1:Set_Cooling_Indicator",
+  argB = "1"
+) {
   rules.push({
     id: "r_" + Date.now() + Math.random(),
     type: "condition",
@@ -158,7 +214,7 @@ function renderRules() {
       row.innerHTML = `
         <span class="rule-tag">RUN</span>
         ${buildDropdown(r.id, "srv", r.srv)}
-        <input type="text" placeholder="arg" value="${r.arg || ""}" style="width: 60px;" onchange="updateRule('${r.id}', 'arg', this.value)">
+        <input type="text" placeholder="arg" value="${r.arg || ""}" style="width: 65px;" onchange="updateRule('${r.id}', 'arg', this.value)">
         <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
       `;
     } else if (r.type === "order") {
@@ -166,10 +222,10 @@ function renderRules() {
       row.innerHTML = `
         <span class="rule-tag">RUN</span>
         ${buildDropdown(r.id, "srvA", r.srvA)}
-        <input type="text" placeholder="arg" value="${r.argA || ""}" style="width: 60px;" onchange="updateRule('${r.id}', 'argA', this.value)">
+        <input type="text" placeholder="arg" value="${r.argA || ""}" style="width: 65px;" onchange="updateRule('${r.id}', 'argA', this.value)">
         <span class="rule-tag">THEN</span>
         ${buildDropdown(r.id, "srvB", r.srvB)}
-        <input type="text" placeholder="arg" value="${r.argB || ""}" style="width: 60px;" onchange="updateRule('${r.id}', 'argB', this.value)">
+        <input type="text" placeholder="arg" value="${r.argB || ""}" style="width: 65px;" onchange="updateRule('${r.id}', 'argB', this.value)">
         <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
       `;
     } else {
@@ -183,10 +239,10 @@ function renderRules() {
           <option value="==" ${r.op === "==" ? "selected" : ""}>==</option>
           <option value="!=" ${r.op === "!=" ? "selected" : ""}>!=</option>
         </select>
-        <input type="number" value="${r.val}" style="width: 70px;" onchange="updateRule('${r.id}', 'val', this.value)">
+        <input type="number" value="${r.val}" style="width: 75px;" onchange="updateRule('${r.id}', 'val', this.value)">
         <span class="rule-tag">DO</span>
         ${buildDropdown(r.id, "srvB", r.srvB)}
-        <input type="text" placeholder="arg" value="${r.argB || ""}" style="width: 60px;" onchange="updateRule('${r.id}', 'argB', this.value)">
+        <input type="text" placeholder="arg" value="${r.argB || ""}" style="width: 65px;" onchange="updateRule('${r.id}', 'argB', this.value)">
         <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
       `;
     }
@@ -196,11 +252,62 @@ function renderRules() {
 
 function buildDropdown(ruleId, field, currentVal) {
   let html = `<select onchange="updateRule('${ruleId}', '${field}', this.value)">`;
-  serviceOptions.forEach((opt) => {
-    html += `<option value="${opt}" ${opt === currentVal ? "selected" : ""}>${opt}</option>`;
-  });
+
+  const rpi1Services = serviceOptions.filter((s) => s.rpi_id === "RPi-1");
+  const rpi2Services = serviceOptions.filter((s) => s.rpi_id === "RPi-2");
+
+  if (rpi1Services.length > 0) {
+    html += `<optgroup label="RPi-1 (Temperature & Cooling)">`;
+    rpi1Services.forEach((s) => {
+      const key = `${s.rpi_id}:${s.name}`;
+      const isSelected =
+        currentVal === key || (currentVal === s.name && s.rpi_id === "RPi-1");
+      html += `<option value="${key}" ${isSelected ? "selected" : ""}>[RPi-1] ${s.name}</option>`;
+    });
+    html += `</optgroup>`;
+  }
+
+  if (rpi2Services.length > 0) {
+    html += `<optgroup label="RPi-2 (Light & Alarm)">`;
+    rpi2Services.forEach((s) => {
+      const key = `${s.rpi_id}:${s.name}`;
+      const isSelected =
+        currentVal === key || (currentVal === s.name && s.rpi_id === "RPi-2");
+      html += `<option value="${key}" ${isSelected ? "selected" : ""}>[RPi-2] ${s.name}</option>`;
+    });
+    html += `</optgroup>`;
+  }
+
   html += `</select>`;
   return html;
+}
+
+function resolveService(srvKey) {
+  let rpi_id = "RPi-1";
+  let name = srvKey || "";
+
+  if (srvKey && srvKey.includes(":")) {
+    const parts = srvKey.split(":");
+    rpi_id = parts[0];
+    name = parts[1];
+  } else {
+    // Infer RPi from known service name if unprefixed
+    if (name === "Read_Light_Level" || name === "Set_Alarm_LED") {
+      rpi_id = "RPi-2";
+    } else {
+      rpi_id = "RPi-1";
+    }
+  }
+
+  const host = nodeHost.value.trim() || "127.0.0.1";
+  let port = 8080;
+  if (rpi_id === "RPi-2") {
+    port = parseInt(nodePort2.value.trim(), 10) || 8081;
+  } else {
+    port = parseInt(nodePort1.value.trim(), 10) || 8080;
+  }
+
+  return { host, port, name, rpi_id };
 }
 
 function updateRule(id, field, val) {
@@ -219,42 +326,82 @@ async function runApplication() {
     return;
   }
 
-  const host = nodeHost.value.trim() || "127.0.0.1";
-  const port = parseInt(nodePort.value.trim(), 10) || 8080;
-
   btnRun.disabled = true;
   btnRun.textContent = "Executing...";
 
   const payload = {
     rules: rules.map((r, i) => {
       if (r.type === "single") {
+        const tgt = resolveService(r.srv);
         const paramStr = r.arg || "";
         const descArg = paramStr ? `(${paramStr})` : "";
         return {
           type: "single",
-          description: `Single Service #${i + 1}: ${r.srv}${descArg}`,
-          service: { host, port, name: r.srv, param: paramStr },
-          service_a: { host, port, name: r.srv, param: paramStr }
+          description: `Single Service #${i + 1}: [${tgt.rpi_id}] ${tgt.name}${descArg}`,
+          service: {
+            host: tgt.host,
+            port: tgt.port,
+            rpi_id: tgt.rpi_id,
+            name: tgt.name,
+            param: paramStr
+          },
+          service_a: {
+            host: tgt.host,
+            port: tgt.port,
+            rpi_id: tgt.rpi_id,
+            name: tgt.name,
+            param: paramStr
+          }
         };
       } else if (r.type === "order") {
+        const tgtA = resolveService(r.srvA);
+        const tgtB = resolveService(r.srvB);
         const paramAStr = r.argA || "";
         const paramBStr = r.argB || "";
         const descA = paramAStr ? `(${paramAStr})` : "";
         const descB = paramBStr ? `(${paramBStr})` : "";
         return {
           type: "order",
-          description: `Order Rule #${i + 1}: ${r.srvA}${descA} -> ${r.srvB}${descB}`,
-          service_a: { host, port, name: r.srvA, param: paramAStr },
-          service_b: { host, port, name: r.srvB, param: paramBStr }
+          description: `Order Rule #${i + 1}: [${tgtA.rpi_id}] ${tgtA.name}${descA} -> [${tgtB.rpi_id}] ${tgtB.name}${descB}`,
+          service_a: {
+            host: tgtA.host,
+            port: tgtA.port,
+            rpi_id: tgtA.rpi_id,
+            name: tgtA.name,
+            param: paramAStr
+          },
+          service_b: {
+            host: tgtB.host,
+            port: tgtB.port,
+            rpi_id: tgtB.rpi_id,
+            name: tgtB.name,
+            param: paramBStr
+          }
         };
       } else {
+        const tgtA = resolveService(r.srvA);
+        const tgtB = resolveService(r.srvB);
+        const paramBStr = r.argB || "";
+        const descB = paramBStr ? `(${paramBStr})` : "";
         return {
           type: "condition",
-          description: `Condition Rule #${i + 1}: IF ${r.srvA} ${r.op} ${r.val} DO ${r.srvB}${r.argB ? `(${r.argB})` : ""}`,
-          service_a: { host, port, name: r.srvA, param: "" },
+          description: `Condition Rule #${i + 1}: IF [${tgtA.rpi_id}] ${tgtA.name} ${r.op} ${r.val} DO [${tgtB.rpi_id}] ${tgtB.name}${descB}`,
+          service_a: {
+            host: tgtA.host,
+            port: tgtA.port,
+            rpi_id: tgtA.rpi_id,
+            name: tgtA.name,
+            param: ""
+          },
           operator: r.op,
           threshold: parseFloat(r.val),
-          service_b: { host, port, name: r.srvB, param: r.argB || "" }
+          service_b: {
+            host: tgtB.host,
+            port: tgtB.port,
+            rpi_id: tgtB.rpi_id,
+            name: tgtB.name,
+            param: paramBStr
+          }
         };
       }
     })
@@ -280,7 +427,8 @@ function displayResults(data) {
   traceLog.innerHTML = "";
   (data.trace || []).forEach((step) => {
     let css = "log-success";
-    if (step.status.includes("FAILED") || step.status.includes("ERROR")) css = "log-error";
+    if (step.status.includes("FAILED") || step.status.includes("ERROR"))
+      css = "log-error";
     if (step.status.includes("SKIPPED")) css = "log-skip";
 
     let text = `[Rule ${step.step_index}] ${step.description}\n`;
@@ -301,7 +449,9 @@ function displayResults(data) {
         } else {
           valStr = "undefined";
         }
-        text += `-> Call ${a.service}(${a.input}) = ${valStr} (${(a.result && a.result.latency_ms) || 0}ms)\n`;
+        const rpiTag = a.rpi_id ? `[${a.rpi_id}] ` : "";
+        const argStr = a.input ? `(${a.input})` : "()";
+        text += `-> Call ${rpiTag}${a.service}${argStr} on ${a.target} = ${valStr} (${(a.result && a.result.latency_ms) || 0}ms)\n`;
       });
     }
 
