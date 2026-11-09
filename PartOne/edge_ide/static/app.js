@@ -15,7 +15,7 @@ const statusPill = document.getElementById("node-status-pill");
 const serviceList = document.getElementById("service-list");
 const serviceCount = document.getElementById("service-count");
 const rulesContainer = document.getElementById("rules-container");
-const presetSelector = document.getElementById("preset-selector");
+const btnAddSingle = document.getElementById("btn-add-single");
 const btnAddOrder = document.getElementById("btn-add-order");
 const btnAddCond = document.getElementById("btn-add-condition");
 const btnClear = document.getElementById("btn-clear-rules");
@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateNodes();
   });
 
+  btnAddSingle.addEventListener("click", () => addSingleRule());
   btnAddOrder.addEventListener("click", () => addOrderRule());
   btnAddCond.addEventListener("click", () => addConditionRule());
   btnClear.addEventListener("click", () => {
@@ -37,20 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
     renderRules();
   });
 
-  presetSelector.addEventListener("change", (e) => {
-    if (e.target.value) {
-      loadPreset(e.target.value);
-      e.target.value = "";
-    }
-  });
-
   btnRun.addEventListener("click", runApplication);
   btnClearTrace.addEventListener("click", () => {
     traceLog.innerHTML = `<div class="empty">Log cleared.</div>`;
   });
 
-  // Default preset
-  loadPreset("preset-order");
+  renderRules();
 });
 
 async function scanServices() {
@@ -66,6 +59,14 @@ async function scanServices() {
     } else {
       statusPill.textContent = "Offline";
       statusPill.className = "pill pill-offline";
+    }
+
+    if (services.length > 0) {
+      services.forEach((s) => {
+        if (!serviceOptions.includes(s.service_name)) {
+          serviceOptions.push(s.service_name);
+        }
+      });
     }
 
     renderServices(services);
@@ -108,11 +109,22 @@ function renderServices(services) {
   });
 }
 
-function addOrderRule(srvA = "Calibrate_Sensors", srvB = "Read_Temperature", argB = "C") {
+function addSingleRule(srv = "Calibrate_Sensors", arg = "") {
+  rules.push({
+    id: "r_" + Date.now() + Math.random(),
+    type: "single",
+    srv,
+    arg
+  });
+  renderRules();
+}
+
+function addOrderRule(srvA = "Calibrate_Sensors", argA = "", srvB = "Read_Temperature", argB = "C") {
   rules.push({
     id: "r_" + Date.now() + Math.random(),
     type: "order",
     srvA,
+    argA,
     srvB,
     argB
   });
@@ -134,25 +146,35 @@ function addConditionRule(srvA = "Read_Light_Level", op = "<", val = 30, srvB = 
 
 function renderRules() {
   if (rules.length === 0) {
-    rulesContainer.innerHTML = `<div class="empty">No rules added. Click "+ Order Rule" or "+ Condition Rule".</div>`;
+    rulesContainer.innerHTML = `<div class="empty">No rules added. Click "+ Single Service", "+ Order Rule", or "+ Condition Rule".</div>`;
     return;
   }
 
   rulesContainer.innerHTML = "";
   rules.forEach((r, i) => {
     const row = document.createElement("div");
-    row.className = `rule-row ${r.type === "condition" ? "cond" : ""}`;
 
-    if (r.type === "order") {
+    if (r.type === "single") {
+      row.className = "rule-row single";
+      row.innerHTML = `
+        <span class="rule-tag">RUN</span>
+        ${buildDropdown(r.id, "srv", r.srv)}
+        <input type="text" placeholder="arg" value="${r.arg || ""}" style="width: 60px;" onchange="updateRule('${r.id}', 'arg', this.value)">
+        <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
+      `;
+    } else if (r.type === "order") {
+      row.className = "rule-row";
       row.innerHTML = `
         <span class="rule-tag">RUN</span>
         ${buildDropdown(r.id, "srvA", r.srvA)}
+        <input type="text" placeholder="arg" value="${r.argA || ""}" style="width: 60px;" onchange="updateRule('${r.id}', 'argA', this.value)">
         <span class="rule-tag">THEN</span>
         ${buildDropdown(r.id, "srvB", r.srvB)}
-        <input type="text" placeholder="arg" value="${r.argB}" style="width: 60px;" onchange="updateRule('${r.id}', 'argB', this.value)">
+        <input type="text" placeholder="arg" value="${r.argB || ""}" style="width: 60px;" onchange="updateRule('${r.id}', 'argB', this.value)">
         <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
       `;
     } else {
+      row.className = "rule-row cond";
       row.innerHTML = `
         <span class="rule-tag">IF</span>
         ${buildDropdown(r.id, "srvA", r.srvA)}
@@ -165,7 +187,7 @@ function renderRules() {
         <input type="number" value="${r.val}" style="width: 70px;" onchange="updateRule('${r.id}', 'val', this.value)">
         <span class="rule-tag">DO</span>
         ${buildDropdown(r.id, "srvB", r.srvB)}
-        <input type="text" placeholder="arg" value="${r.argB}" style="width: 60px;" onchange="updateRule('${r.id}', 'argB', this.value)">
+        <input type="text" placeholder="arg" value="${r.argB || ""}" style="width: 60px;" onchange="updateRule('${r.id}', 'argB', this.value)">
         <button class="btn-del" onclick="delRule('${r.id}')" title="Delete">×</button>
       `;
     }
@@ -192,17 +214,6 @@ function delRule(id) {
   renderRules();
 }
 
-function loadPreset(key) {
-  rules = [];
-  if (key === "preset-order") {
-    addOrderRule("Calibrate_Sensors", "Read_Temperature", "C");
-  } else if (key === "preset-light") {
-    addConditionRule("Read_Light_Level", "<", 30, "Set_Alarm_LED", "1");
-  } else if (key === "preset-temp") {
-    addConditionRule("Read_Temperature", ">", 28, "Set_Cooling_Indicator", "1");
-  }
-}
-
 async function runApplication() {
   if (rules.length === 0) {
     alert("Add at least one rule first.");
@@ -217,21 +228,34 @@ async function runApplication() {
 
   const payload = {
     rules: rules.map((r, i) => {
-      if (r.type === "order") {
+      if (r.type === "single") {
+        const paramStr = r.arg || "";
+        const descArg = paramStr ? `(${paramStr})` : "";
+        return {
+          type: "single",
+          description: `Single Service #${i + 1}: ${r.srv}${descArg}`,
+          service: { host, port, name: r.srv, param: paramStr },
+          service_a: { host, port, name: r.srv, param: paramStr }
+        };
+      } else if (r.type === "order") {
+        const paramAStr = r.argA || "";
+        const paramBStr = r.argB || "";
+        const descA = paramAStr ? `(${paramAStr})` : "";
+        const descB = paramBStr ? `(${paramBStr})` : "";
         return {
           type: "order",
-          description: `Order Rule #${i + 1}: ${r.srvA} -> ${r.srvB}`,
-          service_a: { host, port, name: r.srvA, param: "" },
-          service_b: { host, port, name: r.srvB, param: r.argB }
+          description: `Order Rule #${i + 1}: ${r.srvA}${descA} -> ${r.srvB}${descB}`,
+          service_a: { host, port, name: r.srvA, param: paramAStr },
+          service_b: { host, port, name: r.srvB, param: paramBStr }
         };
       } else {
         return {
           type: "condition",
-          description: `Condition Rule #${i + 1}: IF ${r.srvA} ${r.op} ${r.val} DO ${r.srvB}`,
+          description: `Condition Rule #${i + 1}: IF ${r.srvA} ${r.op} ${r.val} DO ${r.srvB}${r.argB ? `(${r.argB})` : ""}`,
           service_a: { host, port, name: r.srvA, param: "" },
           operator: r.op,
           threshold: parseFloat(r.val),
-          service_b: { host, port, name: r.srvB, param: r.argB }
+          service_b: { host, port, name: r.srvB, param: r.argB || "" }
         };
       }
     })

@@ -10,7 +10,7 @@
 
 ## 1. Project Objectives
 Transition the Virtual Smart Space (VSS) from monolithic embedded code (Labs 1–3 Metronome) to a **Microservices Architecture**:
-- **Part One (Custom SOA)**: Expose C/C++ services on the RPi as 4-tuple vectors `(RPi, Service, Inputs, Params)` and orchestrate them from a laptop Edge Mini-IDE using **Order-based** (`RUN A THEN B`) and **Condition-based** (`IF A [op] [val] DO B`) relationships.
+- **Part One (Custom SOA)**: Expose C/C++ services on the RPi as 4-tuple vectors `(RPi, Service, Inputs, Params)` and orchestrate them from a laptop Edge Mini-IDE using **Single service commands** (`RUN A`), **Order-based** (`RUN A(argA) THEN B(argB)`), and **Condition-based** (`IF A [op] [val] DO B(argB)`) relationships.
 - **Part Two (Atlas Middleware)**: Describe the Thing in **IoT-DDL XML**, deploy the official **Atlas Thing Middleware**, and invoke dynamically generated microservices over **TCP port 6668** using a Demo IoT Application.
 
 ---
@@ -128,3 +128,11 @@ LAB4/
 - **Red LED (Alarm / Danger)**: Controlled via `Set_Alarm_LED(state)` on GPIO 16.
   *Demo rule*: `IF Read_Temperature > 35 DO Set_Alarm_LED 1` (Overheat alarm) or `IF Read_Light_Level < 15 DO Set_Alarm_LED 1` (Intrusion / Darkness alarm).
 - **Calibration**: `Calibrate_Sensors()` flashes both LEDs for 250ms to signal hardware operational status.
+
+---
+
+## 6. Mini-IDE Composer Features & Rule Specification
+- **Single Service Command**: Insert single microservices directly (`RUN srv [arg]`) without condition or sequencing constraints.
+- **Order-Based Rule**: Sequence two microservices (`RUN srvA [argA] THEN srvB [argB]`) with full parameter support on both `srvA` and `srvB`. Service B executes only if Service A succeeds.
+- **Condition-Based Rule**: Conditional branching (`IF srvA [op] [val] DO srvB [argB]`) evaluating numeric threshold conditions before invoking Service B.
+- **Presets Eliminated**: Clean composer interface allowing arbitrary custom compositions without preloaded example presets.

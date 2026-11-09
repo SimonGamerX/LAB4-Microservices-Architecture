@@ -151,6 +151,8 @@ input, select {
 .btn-secondary:hover { background: #0369a1; }
 .btn-outline { background: white; border: 1px solid #cbd5e1; color: #475569; }
 .btn-outline:hover { background: #f1f5f9; }
+.btn-single { background: #faf5ff; border: 1px solid #d8b4fe; color: #6b21a8; }
+.btn-single:hover { background: #f3e8ff; }
 .btn-order { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
 .btn-order:hover { background: #dbeafe; }
 .btn-cond { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
@@ -181,6 +183,10 @@ input, select {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.rule-row.single {
+  border-left-color: #8b5cf6;
 }
 
 .rule-row.cond {

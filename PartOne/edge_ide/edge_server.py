@@ -8,8 +8,9 @@ Functions:
 - Discovers and collects service vectors from RPi nodes: (RPi_ID, Service_Name, Num_Inputs, Param_Names)
 - Provides Web-based Dashboard and Mini-IDE on http://localhost:5000
 - Orchestrates composed IoT applications using:
-    1) Order-based relationships (Service B runs strictly after Service A succeeds)
-    2) Condition-based relationships (Service B runs conditionally based on Service A's return value)
+    1) Single service execution (Direct invocation of a single service without conditions)
+    2) Order-based relationships (Service B runs strictly after Service A succeeds)
+    3) Condition-based relationships (Service B runs conditionally based on Service A's return value)
 - Translates workflows into RPi service API calls, evaluates conditions, and collects results.
 """
 
@@ -128,6 +129,7 @@ def execute_composed_program(composition):
     """
     Translates and executes a composed IoT application on the Edge.
     Supported step relationships:
+      - 'single': Direct execution of a single service without condition.
       - 'order': Run Service A, wait for success, then run Service B.
       - 'condition': Run Service A, test condition (>, <, ==, !=, >=, <=) on output, then conditionally run Service B.
     """
@@ -146,7 +148,29 @@ def execute_composed_program(composition):
             "status": "PENDING"
         }
 
-        if rule_type == "order":
+        if rule_type in ("single", "single_service"):
+            # Single service execution without condition
+            srv = rule.get("service") or rule.get("service_a")
+            if not srv:
+                step_log["status"] = "ERROR"
+                step_log["error"] = "No service specified for single service rule."
+                trace.append(step_log)
+                overall_success = False
+                continue
+
+            res = invoke_rpi_service(srv["host"], srv["port"], srv["name"], srv.get("param", ""))
+            step_log["actions"].append({
+                "service": srv["name"],
+                "target": f"{srv['host']}:{srv['port']}",
+                "input": srv.get("param", ""),
+                "result": res
+            })
+            step_log["status"] = "SUCCESS" if res.get("status") == "SUCCESS" else "FAILED"
+            if res.get("status") != "SUCCESS":
+                step_log["error"] = res.get("message", "Service execution failed.")
+                overall_success = False
+
+        elif rule_type == "order":
             # Order-based relationship: Service A then Service B
             srv_a = rule.get("service_a") # {host, port, name, param}
             srv_b = rule.get("service_b")
