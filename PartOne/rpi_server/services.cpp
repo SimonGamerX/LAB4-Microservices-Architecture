@@ -92,8 +92,7 @@ std::vector<ServiceDescriptor> get_available_services(const std::string& rpi_id)
         {rpi_id, "Read_Light_Level", 0, {}, "int", "Reads ambient light intensity from LDR on ADS1115 Channel A0. Returns percentage 0-100."},
         {rpi_id, "Read_Temperature", 1, {"scale"}, "int", "Reads simulated thermostat temperature dial from Rotary Encoder on GPIO 20/21. Argument: 'C' or 'F'."},
         {rpi_id, "Set_Alarm_LED", 1, {"state"}, "void", "Controls Red Alarm LED on GPIO 16 (1 = ON, 0 = OFF)."},
-        {rpi_id, "Set_Cooling_Indicator", 1, {"state"}, "void", "Controls Green Cooling LED on GPIO 12 (1 = ON, 0 = OFF)."},
-        {rpi_id, "Trigger_Buzzer", 1, {"duration_ms"}, "void", "Emits an audible buzzer alert for the specified duration in ms."}
+        {rpi_id, "Set_Cooling_Indicator", 1, {"state"}, "void", "Controls Green Cooling LED on GPIO 12 (1 = ON, 0 = OFF)."}
     };
 }
 
@@ -132,10 +131,8 @@ void init_hardware() {
     // Actuator Output Pins
     pinMode(PIN_RED_LED, OUTPUT);
     pinMode(PIN_GREEN_LED, OUTPUT);
-    pinMode(PIN_BUZZER, OUTPUT);
     digitalWrite(PIN_RED_LED, LOW);
     digitalWrite(PIN_GREEN_LED, LOW);
-    digitalWrite(PIN_BUZZER, LOW);
 
     // Rotary Encoder Input Pins (with internal pull-ups)
     pinMode(PIN_ENCODER_CLK, INPUT);
@@ -270,14 +267,4 @@ void Set_Cooling_Indicator(int state) {
     digitalWrite(PIN_GREEN_LED, s_green_led_state ? HIGH : LOW);
     std::cout << "[Service] Set_Cooling_Indicator(" << s_green_led_state << ") -> Green LED is "
               << (s_green_led_state ? "ON" : "OFF") << std::endl;
-}
-
-void Trigger_Buzzer(int duration_ms) {
-    init_hardware();
-    if (duration_ms <= 0) duration_ms = 100;
-    if (duration_ms > 2000) duration_ms = 2000;
-    std::cout << "[Service] Trigger_Buzzer(" << duration_ms << " ms)" << std::endl;
-    digitalWrite(PIN_BUZZER, HIGH);
-    std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
-    digitalWrite(PIN_BUZZER, LOW);
 }

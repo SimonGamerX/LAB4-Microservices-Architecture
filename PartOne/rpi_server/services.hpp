@@ -23,7 +23,6 @@ std::vector<ServiceDescriptor> get_available_services(const std::string& rpi_id)
 // Actuator Pin Definitions (Lab 4)
 constexpr int PIN_RED_LED      = 16;  // Red LED (Alarm Actuator, RPi Pin 36)
 constexpr int PIN_GREEN_LED    = 12;  // Green LED (Cooling / Fan Actuator, RPi Pin 32)
-constexpr int PIN_BUZZER       = 26;  // Optional buzzer pin (RPi Pin 37)
 
 // ADS1115 16-bit I2C ADC Configuration (I2C: SDA=GPIO2, SCL=GPIO3)
 constexpr int ADS1115_I2C_ADDR = 0x48; // Default I2C address with ADDR tied to GND
@@ -41,7 +40,6 @@ int Read_Light_Level();
 int Read_Temperature(char scale);
 void Set_Alarm_LED(int state);
 void Set_Cooling_Indicator(int state);
-void Trigger_Buzzer(int duration_ms);
 
 // Low-level ADS1115 reader (16-bit ADC)
 int read_ads1115_channel(int channel);

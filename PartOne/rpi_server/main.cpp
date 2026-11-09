@@ -94,15 +94,6 @@ std::string execute_service_call(const std::string& service_name, const std::str
         response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
                  << "\",\"state\":" << state << ",\"return_value\":\"void\"}";
     }
-    else if (service_name == "Trigger_Buzzer") {
-        int duration = 200;
-        if (!arg_str.empty()) {
-            duration = std::atoi(arg_str.c_str());
-        }
-        Trigger_Buzzer(duration);
-        response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"duration_ms\":" << duration << ",\"return_value\":\"void\"}";
-    }
     else {
         response << "{\"status\":\"ERROR\",\"message\":\"Unknown service: " << service_name << "\"}";
     }

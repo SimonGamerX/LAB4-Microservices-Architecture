@@ -4,8 +4,7 @@ const serviceOptions = [
   "Read_Light_Level",
   "Read_Temperature",
   "Set_Alarm_LED",
-  "Set_Cooling_Indicator",
-  "Trigger_Buzzer"
+  "Set_Cooling_Indicator"
 ];
 
 const nodeHost = document.getElementById("node-host");
