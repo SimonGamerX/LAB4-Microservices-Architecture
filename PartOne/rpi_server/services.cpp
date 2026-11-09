@@ -86,13 +86,14 @@ std::string ServiceDescriptor::to_json() const {
     return ss.str();
 }
 
-std::vector<ServiceDescriptor> get_available_services(const std::string& rpi_id) {
+std::vector<ServiceDescriptor> get_available_services(const std::string& /*rpi_id*/) {
     return {
-        {rpi_id, "Calibrate_Sensors", 0, {}, "int", "Calibrates ADS1115 ADC & Rotary Encoder baseline. Returns 1 on success."},
-        {rpi_id, "Read_Light_Level", 0, {}, "int", "Reads ambient light intensity from LDR on ADS1115 Channel A0. Returns percentage 0-100."},
-        {rpi_id, "Read_Temperature", 1, {"scale"}, "int", "Reads simulated thermostat temperature dial from Rotary Encoder on GPIO 20/21. Argument: 'C' or 'F'."},
-        {rpi_id, "Set_Alarm_LED", 1, {"state"}, "void", "Controls Red Alarm LED on GPIO 16 (1 = ON, 0 = OFF)."},
-        {rpi_id, "Set_Cooling_Indicator", 1, {"state"}, "void", "Controls Green Cooling LED on GPIO 12 (1 = ON, 0 = OFF)."}
+        {"RPi-1", "Calibrate_Sensors", 0, {}, "int", "RPi-1: Calibrates Rotary Encoder baseline & tests Green Cooling LED."},
+        {"RPi-1", "Read_Temperature", 1, {"scale"}, "int", "RPi-1: Reads simulated thermostat temperature dial from Rotary Encoder on GPIO 20/21. Argument: 'C' or 'F'."},
+        {"RPi-1", "Set_Cooling_Indicator", 1, {"state"}, "void", "RPi-1: Controls Green Cooling LED on GPIO 12 (1 = ON, 0 = OFF)."},
+        {"RPi-2", "Calibrate_Sensors", 0, {}, "int", "RPi-2: Calibrates ADS1115 ADC baseline & tests Red Alarm LED."},
+        {"RPi-2", "Read_Light_Level", 0, {}, "int", "RPi-2: Reads ambient light intensity from LDR on ADS1115 Channel A0. Returns percentage 0-100."},
+        {"RPi-2", "Set_Alarm_LED", 1, {"state"}, "void", "RPi-2: Controls Red Alarm LED on GPIO 16 (1 = ON, 0 = OFF)."}
     };
 }
 

@@ -56,16 +56,20 @@ std::string extract_query_param(const std::string& query, const std::string& key
 // Service dispatcher function
 std::string execute_service_call(const std::string& service_name, const std::string& arg_str) {
     std::ostringstream response;
+    std::string logical_rpi = "RPi-1";
+    if (service_name == "Read_Light_Level" || service_name == "Set_Alarm_LED") {
+        logical_rpi = "RPi-2";
+    }
 
     if (service_name == "Calibrate_Sensors") {
         int res = Calibrate_Sensors();
         response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"return_value\":" << res << "}";
+                 << "\",\"rpi_id\":\"" << logical_rpi << "\",\"return_value\":" << res << "}";
     }
     else if (service_name == "Read_Light_Level") {
         int res = Read_Light_Level();
         response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"return_value\":" << res << "}";
+                 << "\",\"rpi_id\":\"RPi-2\",\"return_value\":" << res << "}";
     }
     else if (service_name == "Read_Temperature") {
         char scale = 'C';
@@ -74,7 +78,7 @@ std::string execute_service_call(const std::string& service_name, const std::str
         }
         int res = Read_Temperature(scale);
         response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"scale\":\"" << scale << "\",\"return_value\":" << res << "}";
+                 << "\",\"rpi_id\":\"RPi-1\",\"scale\":\"" << scale << "\",\"return_value\":" << res << "}";
     }
     else if (service_name == "Set_Alarm_LED") {
         int state = 0;
@@ -83,7 +87,7 @@ std::string execute_service_call(const std::string& service_name, const std::str
         }
         Set_Alarm_LED(state);
         response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"state\":" << state << ",\"return_value\":\"void\"}";
+                 << "\",\"rpi_id\":\"RPi-2\",\"state\":" << state << ",\"return_value\":\"void\"}";
     }
     else if (service_name == "Set_Cooling_Indicator") {
         int state = 0;
@@ -92,7 +96,7 @@ std::string execute_service_call(const std::string& service_name, const std::str
         }
         Set_Cooling_Indicator(state);
         response << "{\"status\":\"SUCCESS\",\"service\":\"" << service_name 
-                 << "\",\"state\":" << state << ",\"return_value\":\"void\"}";
+                 << "\",\"rpi_id\":\"RPi-1\",\"state\":" << state << ",\"return_value\":\"void\"}";
     }
     else {
         response << "{\"status\":\"ERROR\",\"message\":\"Unknown service: " << service_name << "\"}";

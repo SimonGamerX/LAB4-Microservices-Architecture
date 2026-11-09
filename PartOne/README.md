@@ -3,21 +3,18 @@
 ## Commands to Run
 
 ### 1. Raspberry Pi (Hardware / C++ Services)
-Compile both RPi service servers:
+Compile the standalone service server:
 ```bash
 cd rpi_server
 make
 ```
 
-Run both servers (in separate terminals or as background processes):
+Run the server (hosts all hardware services partitioned logically as RPi-1 and RPi-2):
 ```bash
-# Terminal 1 - RPi-1 (Thermostat Dial on GPIO 20/21 + Cooling Fan LED on GPIO 12):
-./rpi1_service_server RPi-1 8080
-
-# Terminal 2 - RPi-2 (ADS1115 Light Sensor on I2C A0 + Alarm LED on GPIO 16):
-./rpi2_service_server RPi-2 8081
+./rpi_service_server RPi 8080
 ```
-*(Alternative: you can also run the unified single-process server: `./rpi_service_server RPi-1 8080`)*
+- **RPi-1 Services**: `Read_Temperature` (Rotary Encoder on GPIO 20/21) & `Set_Cooling_Indicator` (Green LED on GPIO 12).
+- **RPi-2 Services**: `Read_Light_Level` (ADS1115 ADC on I2C A0) & `Set_Alarm_LED` (Red LED on GPIO 16).
 
 ### 2. Laptop (Edge Dashboard & Mini-IDE)
 ```bash

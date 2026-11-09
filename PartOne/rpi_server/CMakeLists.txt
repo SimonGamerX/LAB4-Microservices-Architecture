@@ -10,21 +10,7 @@ else()
     set(EXTRA_LIBS wiringPi pthread)
 endif()
 
-# RPi-1 Target: Thermostat Dial & Cooling Fan LED
-add_executable(rpi1_service_server
-    main_rpi1.cpp
-    services_rpi1.cpp
-)
-target_link_libraries(rpi1_service_server PRIVATE ${EXTRA_LIBS})
-
-# RPi-2 Target: Light Sensor & Alarm LED
-add_executable(rpi2_service_server
-    main_rpi2.cpp
-    services_rpi2.cpp
-)
-target_link_libraries(rpi2_service_server PRIVATE ${EXTRA_LIBS})
-
-# Unified Server Target (Single process alternative)
+# Standalone RPi Service Server (hosting logical RPi-1 and RPi-2 services)
 add_executable(rpi_service_server
     main.cpp
     services.cpp

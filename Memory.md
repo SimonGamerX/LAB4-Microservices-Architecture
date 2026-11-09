@@ -59,17 +59,11 @@ LAB4/
 │   ├── Lab 4 – Build Microservices for your Smart Space-1.pdf
 │   └── Lab4_Microservices_Smart_Space.pptx
 ├── PartOne/
-│   ├── rpi_server/             # C/C++ services & REST servers (RPi-1 & RPi-2)
-│   │   ├── main_rpi1.cpp       # RPi-1 entry point (Port 8080): Thermostat & Cooling LED
-│   │   ├── services_rpi1.cpp   # RPi-1 services: Read_Temperature, Set_Cooling_Indicator
-│   │   ├── services_rpi1.hpp   # RPi-1 headers & descriptors
-│   │   ├── main_rpi2.cpp       # RPi-2 entry point (Port 8081): Light Sensor & Alarm LED
-│   │   ├── services_rpi2.cpp   # RPi-2 services: Read_Light_Level, Set_Alarm_LED
-│   │   ├── services_rpi2.hpp   # RPi-2 headers & descriptors
-│   │   ├── main.cpp            # Unified single-process entry point alternative
-│   │   ├── services.cpp        # Unified service implementations
-│   │   ├── services.hpp        # Unified headers
-│   │   ├── Makefile            # Standalone build (compiles rpi1, rpi2, and unified)
+│   ├── rpi_server/             # C/C++ services & REST server (Port 8080)
+│   │   ├── main.cpp            # Server entry point & REST dispatcher
+│   │   ├── services.cpp        # Hardware functions & logical RPi-1/RPi-2 service vectors
+│   │   ├── services.hpp        # Service vector definitions & headers
+│   │   ├── Makefile            # Standalone build for Raspberry Pi (make)
 │   │   └── CMakeLists.txt      # CMake build configuration
 │   ├── edge_ide/               # Minimalist Edge layer (Port 5000)
 │   │   ├── edge_server.py      # Python orchestrator & service vector collector
@@ -98,10 +92,7 @@ LAB4/
   
   cd PartOne/rpi_server
   make
-  # Run RPi-1 (Thermostat Dial on GPIO 20/21 + Cooling LED on GPIO 12):
-  ./rpi1_service_server RPi-1 8080
-  # In another terminal, run RPi-2 (ADS1115 Light on I2C A0 + Alarm LED on GPIO 16):
-  ./rpi2_service_server RPi-2 8081
+  ./rpi_service_server RPi 8080
   ```
 - **On Laptop**:
   ```bash

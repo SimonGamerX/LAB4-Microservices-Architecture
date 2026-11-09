@@ -28,10 +28,9 @@ import time
 PORT = 5000
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
-# Known RPi endpoints (default to localhost:8080 and 8081 for simulation; editable from UI)
+# Known RPi endpoint (single physical Raspberry Pi hosting logical RPi-1 and RPi-2 services)
 rpi_endpoints = [
-    {"rpi_id": "RPi-1", "host": "127.0.0.1", "port": 8080, "status": "UNKNOWN"},
-    {"rpi_id": "RPi-2", "host": "127.0.0.1", "port": 8081, "status": "UNKNOWN"}
+    {"rpi_id": "RPi", "host": "127.0.0.1", "port": 8080, "status": "UNKNOWN"}
 ]
 
 # Cache of discovered service vectors
@@ -116,10 +115,11 @@ def refresh_discovery():
         res = query_rpi_services(node["host"], node["port"])
         if res:
             node["status"] = "ONLINE"
-            node["rpi_id"] = res.get("rpi_id", node["rpi_id"])
             for s in res.get("services", []):
                 s["host"] = node["host"]
                 s["port"] = node["port"]
+                if "rpi_id" not in s or not s["rpi_id"]:
+                    s["rpi_id"] = node["rpi_id"]
                 catalog.append(s)
         else:
             node["status"] = "OFFLINE"

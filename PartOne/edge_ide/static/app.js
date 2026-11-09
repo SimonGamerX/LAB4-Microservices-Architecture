@@ -1,6 +1,6 @@
 let rules = [];
 
-// Service options grouped by RPi node (populated by discovery, with standard defaults)
+// Logical microservice catalog partitioned across RPi-1 and RPi-2
 let serviceOptions = [
   { rpi_id: "RPi-1", name: "Read_Temperature", label: "[RPi-1] Read_Temperature (Dial)" },
   { rpi_id: "RPi-1", name: "Set_Cooling_Indicator", label: "[RPi-1] Set_Cooling_Indicator (Green LED)" },
@@ -10,17 +10,10 @@ let serviceOptions = [
   { rpi_id: "RPi-2", name: "Calibrate_Sensors", label: "[RPi-2] Calibrate_Sensors (Red LED Flash)" }
 ];
 
-let currentNodes = [
-  { rpi_id: "RPi-1", host: "127.0.0.1", port: 8080, status: "OFFLINE" },
-  { rpi_id: "RPi-2", host: "127.0.0.1", port: 8081, status: "OFFLINE" }
-];
-
 const nodeHost = document.getElementById("node-host");
-const nodePort1 = document.getElementById("node-port-1");
-const nodePort2 = document.getElementById("node-port-2");
+const nodePort = document.getElementById("node-port");
 const btnConnect = document.getElementById("btn-connect");
-const statusPill1 = document.getElementById("node-status-pill-1");
-const statusPill2 = document.getElementById("node-status-pill-2");
+const statusPill = document.getElementById("node-status-pill");
 const serviceList = document.getElementById("service-list");
 const serviceCount = document.getElementById("service-count");
 const rulesContainer = document.getElementById("rules-container");
@@ -60,27 +53,14 @@ async function scanServices() {
     const res = await fetch("/api/discovery");
     const data = await res.json();
     const services = data.services || [];
-    const nodes = data.nodes || [];
+    const node = (data.nodes && data.nodes[0]) || {};
 
-    currentNodes = nodes;
-
-    const node1 = nodes.find((n) => n.rpi_id === "RPi-1") || nodes[0] || {};
-    const node2 = nodes.find((n) => n.rpi_id === "RPi-2") || nodes[1] || {};
-
-    if (node1.status === "ONLINE") {
-      statusPill1.textContent = "RPI-1: ONLINE";
-      statusPill1.className = "pill pill-online";
+    if (node.status === "ONLINE") {
+      statusPill.textContent = "NODE: ONLINE";
+      statusPill.className = "pill pill-online";
     } else {
-      statusPill1.textContent = "RPI-1: OFFLINE";
-      statusPill1.className = "pill pill-offline";
-    }
-
-    if (node2.status === "ONLINE") {
-      statusPill2.textContent = "RPI-2: ONLINE";
-      statusPill2.className = "pill pill-online";
-    } else {
-      statusPill2.textContent = "RPI-2: OFFLINE";
-      statusPill2.className = "pill pill-offline";
+      statusPill.textContent = "NODE: OFFLINE";
+      statusPill.className = "pill pill-offline";
     }
 
     if (services.length > 0) {
@@ -89,10 +69,8 @@ async function scanServices() {
 
     renderServices(services);
   } catch (e) {
-    statusPill1.textContent = "RPI-1: OFFLINE";
-    statusPill1.className = "pill pill-offline";
-    statusPill2.textContent = "RPI-2: OFFLINE";
-    statusPill2.className = "pill pill-offline";
+    statusPill.textContent = "NODE: OFFLINE";
+    statusPill.className = "pill pill-offline";
   }
 }
 
@@ -103,9 +81,9 @@ function updateServiceOptions(services) {
     );
     if (!exists) {
       serviceOptions.push({
-        rpi_id: s.rpi_id,
+        rpi_id: s.rpi_id || "RPi-1",
         name: s.service_name,
-        label: `[${s.rpi_id}] ${s.service_name}`
+        label: `[${s.rpi_id || "RPi"}] ${s.service_name}`
       });
     }
   });
@@ -113,20 +91,15 @@ function updateServiceOptions(services) {
 
 async function updateNodes() {
   const host = nodeHost.value.trim() || "127.0.0.1";
-  const port1 = parseInt(nodePort1.value.trim(), 10) || 8080;
-  const port2 = parseInt(nodePort2.value.trim(), 10) || 8081;
+  const port = parseInt(nodePort.value.trim(), 10) || 8080;
 
-  statusPill1.textContent = "CONNECTING...";
-  statusPill2.textContent = "CONNECTING...";
+  statusPill.textContent = "CONNECTING...";
 
   await fetch("/api/config_nodes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      nodes: [
-        { rpi_id: "RPi-1", host, port: port1 },
-        { rpi_id: "RPi-2", host, port: port2 }
-      ]
+      nodes: [{ rpi_id: "RPi", host, port }]
     })
   });
   await scanServices();
@@ -135,7 +108,7 @@ async function updateNodes() {
 function renderServices(services) {
   serviceCount.textContent = `${services.length} found`;
   if (services.length === 0) {
-    serviceList.innerHTML = `<div class="empty">No services detected. Start the RPi servers (RPi-1 on 8080, RPi-2 on 8081).</div>`;
+    serviceList.innerHTML = `<div class="empty">No services detected. Start the RPi server on port 8080.</div>`;
     return;
   }
 
@@ -147,7 +120,7 @@ function renderServices(services) {
     item.className = "vector-item";
     item.innerHTML = `
       <div class="vector-code">${vector}</div>
-      <div class="vector-desc">${s.description} <span style="opacity: 0.6;">[${s.host}:${s.port}]</span></div>
+      <div class="vector-desc">${s.description}</div>
     `;
     serviceList.appendChild(item);
   });
@@ -291,7 +264,6 @@ function resolveService(srvKey) {
     rpi_id = parts[0];
     name = parts[1];
   } else {
-    // Infer RPi from known service name if unprefixed
     if (name === "Read_Light_Level" || name === "Set_Alarm_LED") {
       rpi_id = "RPi-2";
     } else {
@@ -299,13 +271,9 @@ function resolveService(srvKey) {
     }
   }
 
+  // Physical connection target is the single connected Raspberry Pi
   const host = nodeHost.value.trim() || "127.0.0.1";
-  let port = 8080;
-  if (rpi_id === "RPi-2") {
-    port = parseInt(nodePort2.value.trim(), 10) || 8081;
-  } else {
-    port = parseInt(nodePort1.value.trim(), 10) || 8080;
-  }
+  const port = parseInt(nodePort.value.trim(), 10) || 8080;
 
   return { host, port, name, rpi_id };
 }
@@ -451,7 +419,7 @@ function displayResults(data) {
         }
         const rpiTag = a.rpi_id ? `[${a.rpi_id}] ` : "";
         const argStr = a.input ? `(${a.input})` : "()";
-        text += `-> Call ${rpiTag}${a.service}${argStr} on ${a.target} = ${valStr} (${(a.result && a.result.latency_ms) || 0}ms)\n`;
+        text += `-> Call ${rpiTag}${a.service}${argStr} = ${valStr} (${(a.result && a.result.latency_ms) || 0}ms)\n`;
       });
     }
 
