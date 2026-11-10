@@ -2,28 +2,46 @@
 
 ## Commands to Run
 
-### 1. Install & Build Atlas Middleware (Raspberry Pi)
+### 1. Prerequisites: Install CppMicroServices & WiringPi (Raspberry Pi)
+The Atlas middleware requires `CppMicroServices` and `WiringPi` located in the `lib/` folder:
+
 ```bash
-# 1. Clone the Atlas middleware
-cd ~/LAB4-Microservices-Architecture/PartTwo
-git clone https://github.com/NickLiJunjie/AtlasThingMiddleware_RPI.git
+cd ~/LAB4-Microservices-Architecture/PartTwo/AtlasThingMiddleware_RPI/lib
 
-# 2. Enter the inner project directory (Note: Atlas project files are inside Atlas-IoT_thing or Atlas-IoT_Thing)
-cd AtlasThingMiddleware_RPI/Atlas-IoT*
+# 1. Install CppMicroServices (Fixes "cppmicroservices/ServiceInterface.h: No such file or directory")
+unzip -q CppMicroServices-development.zip 2>/dev/null || true
+cd CppMicroServices-development
+mkdir -p build && cd build
+cmake ..
+make -j$(nproc)
+sudo make install
 
-# 3. Copy our generated IoT-DDL configuration file into ConfigurationFiles/
-cp ../../Atlas_IoTDDL.xml ConfigurationFiles/Atlas_IoTDDL.xml
+# Ensure headers are in standard /usr/local/include/cppmicroservices
+sudo cp -r /usr/local/include/cppmicroservices*/cppmicroservices /usr/local/include/ 2>/dev/null || true
+sudo ldconfig
 
-# 4. Compile directly using cmake pointing to Main/
-cmake Main/
+# 2. Install WiringPi (if not already installed)
+cd ~/LAB4-Microservices-Architecture/PartTwo/AtlasThingMiddleware_RPI/lib
+unzip -q WiringPi-master.zip 2>/dev/null || true
+cd WiringPi-master
+./build
+```
+
+### 2. Build Atlas Middleware (Raspberry Pi)
+```bash
+cd ~/LAB4-Microservices-Architecture/PartTwo/AtlasThingMiddleware_RPI
+
+# Copy our generated IoT-DDL configuration file
+cp ../Atlas_IoTDDL.xml ConfigurationFiles/Atlas_IoTDDL.xml
+
+# Compile (or resume compilation)
 make
 
-# 5. Run the Atlas middleware (listens on port 6668)
+# Run the Atlas middleware (listens on port 6668)
 ./Atlas
 ```
-*(If you were in an accidental `build/` directory, simply remove it with `rm -rf build` and `cd` into the inner `Atlas-IoT*` directory as shown above).*
 
-### 2. Run Demo IoT Application (Laptop)
+### 3. Run Demo IoT Application (Laptop)
 ```bash
 cd PartTwo
 python demo_app.py <RPi_IP_Address>
