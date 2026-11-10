@@ -28,13 +28,15 @@ sudo make install
 sudo cp -r /usr/local/include/cppmicroservices*/cppmicroservices /usr/local/include/ 2>/dev/null || true
 sudo ldconfig
 
-# 2. Install WiringPi (with -fcommon for GCC)
+# 2. Install WiringPi (fixes multiple definition of comDat)
 cd ~/LAB4-Microservices-Architecture/PartTwo/AtlasThingMiddleware_RPI/lib
 unzip -q WiringPi-master.zip 2>/dev/null || true
 cd WiringPi-master
 find . -name "*.o" -delete
+find . -name "*.so*" -delete
+find . -name "drcNetCmd.h" -exec sed -i -E 's/\}[[:space:]]*comDat[[:space:]]*;/}; extern struct drcNetComStruct comDat;/' {} +
+sed -i '1i struct drcNetComStruct comDat;' wiringPi/drcNet.c
 find . -name "Makefile" -exec sed -i 's/CFLAGS =/CFLAGS = -fcommon /g' {} +
-find . -name "Makefile" -exec sed -i 's/CFLAGS=/CFLAGS = -fcommon /g' {} +
 ./build
 ```
 
