@@ -51,6 +51,6 @@ python demo_app.py <RPi_IP_Address>
 ---
 
 ## Group Effort Distribution
-- Member 1: IoT-DDL XML specification & ADC configuration (33.3%)
-- Member 2: Atlas Thing Middleware setup & C++ service integration (33.3%)
-- Member 3: Demo IoT Application (TCP JSON client on port 6668) (33.3%)
+- Simone Pipola: IoT-DDL XML specification & ADC configuration (33.3%)
+- Riccardo Carini: Atlas Thing Middleware setup & C++ service integration (33.3%)
+- Nicola Ceccarini: Demo IoT Application (TCP JSON client on port 6668) (33.4%)
