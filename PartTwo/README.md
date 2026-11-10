@@ -20,10 +20,13 @@ sudo make install
 sudo cp -r /usr/local/include/cppmicroservices*/cppmicroservices /usr/local/include/ 2>/dev/null || true
 sudo ldconfig
 
-# 2. Install WiringPi (if not already installed)
+# 2. Install WiringPi (with -fcommon for GCC 10+)
 cd ~/LAB4-Microservices-Architecture/PartTwo/AtlasThingMiddleware_RPI/lib
 unzip -q WiringPi-master.zip 2>/dev/null || true
 cd WiringPi-master
+find . -name "*.o" -delete
+find . -name "Makefile" -exec sed -i 's/CFLAGS =/CFLAGS = -fcommon /g' {} +
+find . -name "Makefile" -exec sed -i 's/CFLAGS=/CFLAGS = -fcommon /g' {} +
 ./build
 ```
 
