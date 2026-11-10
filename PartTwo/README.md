@@ -2,17 +2,25 @@
 
 ## Commands to Run
 
-### 1. Prerequisites: Install CppMicroServices & WiringPi (Raspberry Pi)
-The Atlas middleware requires `CppMicroServices` and `WiringPi` located in the `lib/` folder:
+### 1. Prerequisites: Install GCC 12, CppMicroServices & WiringPi (Raspberry Pi)
+The Atlas middleware codebase is older and incompatible with GCC 14. GCC 12 is recommended:
 
 ```bash
+# Install GCC 12 / G++ 12
+sudo apt update
+sudo apt install -y gcc-12 g++-12
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 --slave /usr/bin/g++ g++ /usr/bin/g++-12
+sudo update-alternatives --set gcc /usr/bin/gcc-12
+export CC=gcc-12
+export CXX=g++-12
+
 cd ~/LAB4-Microservices-Architecture/PartTwo/AtlasThingMiddleware_RPI/lib
 
 # 1. Install CppMicroServices (Fixes "cppmicroservices/ServiceInterface.h: No such file or directory")
 unzip -q CppMicroServices-development.zip 2>/dev/null || true
 cd CppMicroServices-development
 mkdir -p build && cd build
-cmake ..
+cmake -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 ..
 make -j$(nproc)
 sudo make install
 
@@ -20,7 +28,7 @@ sudo make install
 sudo cp -r /usr/local/include/cppmicroservices*/cppmicroservices /usr/local/include/ 2>/dev/null || true
 sudo ldconfig
 
-# 2. Install WiringPi (with -fcommon for GCC 10+)
+# 2. Install WiringPi (with -fcommon for GCC)
 cd ~/LAB4-Microservices-Architecture/PartTwo/AtlasThingMiddleware_RPI/lib
 unzip -q WiringPi-master.zip 2>/dev/null || true
 cd WiringPi-master
