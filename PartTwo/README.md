@@ -28,7 +28,7 @@ sudo make install
 sudo cp -r /usr/local/include/cppmicroservices*/cppmicroservices /usr/local/include/ 2>/dev/null || true
 sudo ldconfig
 
-# 2. Install WiringPi (fixes multiple definition of comDat)
+# 2. Install WiringPi (fixes multiple definition of comDat and missing Hardware line)
 cd ~/LAB4-Microservices-Architecture/PartTwo/AtlasThingMiddleware_RPI/lib
 unzip -q WiringPi-master.zip 2>/dev/null || true
 cd WiringPi-master
@@ -37,6 +37,19 @@ find . -name "*.so*" -delete
 find . -name "drcNetCmd.h" -exec sed -i -E 's/\}[[:space:]]*comDat[[:space:]]*;/}; extern struct drcNetComStruct comDat;/' {} +
 sed -i '1i struct drcNetComStruct comDat;' wiringPi/drcNet.c
 find . -name "Makefile" -exec sed -i 's/CFLAGS =/CFLAGS = -fcommon /g' {} +
+
+# Patch wiringPi.c to bypass missing "Hardware" line in modern kernels
+python3 -c "
+import re
+path = 'wiringPi/wiringPi.c'
+with open(path, 'r') as f:
+    text = f.read()
+text = re.sub(r'(int\s+piGpioLayout\s*\([^\)]*\)\s*\{)', r'\1\n  return 2;', text, count=1)
+text = re.sub(r'(int\s+piBoardRev\s*\([^\)]*\)\s*\{)', r'\1\n  return 2;', text, count=1)
+with open(path, 'w') as f:
+    f.write(text)
+print('wiringPi.c patched!')
+"
 ./build
 ```
 
