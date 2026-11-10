@@ -183,49 +183,40 @@ value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 					<OutputDescription>value</OutputDescription>
 					<OutputType>int</OutputType>
 					<Service_Formula><![CDATA[
-// Rotary Encoder temperature tracking with file-based persistence.
-// Stores current temperature in /tmp/atlas_temp so state survives between calls.
-// Polls GPIO 20 (CLK) and GPIO 21 (DT) for 300ms per call to catch user rotations.
-#include <stdio.h>
-#include <unistd.h>
-int clkPin = 20;
-int dtPin  = 21;
-wiringPiSetupGpio();
-pinMode(clkPin, INPUT);
-pullUpDnControl(clkPin, PUD_UP);
-pinMode(dtPin,  INPUT);
-pullUpDnControl(dtPin,  PUD_UP);
-
-// Load persisted temperature from file (default 24 degrees C on first run)
-int currentTemp = 24;
-FILE* rf = fopen("/tmp/atlas_temp", "r");
-if (rf) { fscanf(rf, "%d", &currentTemp); fclose(rf); }
-
-// Poll the encoder for 300ms (150 iterations x 2ms) to catch rotations
-int lastClk = digitalRead(clkPin);
-for (int i = 0; i < 150; i++) {
-    int clkState = digitalRead(clkPin);
-    if (clkState != lastClk && clkState == LOW) {
-        if (digitalRead(dtPin) != clkState) {
-            if (currentTemp < 45) currentTemp++;
-        } else {
-            if (currentTemp > 15) currentTemp--;
+static int currentTemp = 24;
+static int threadStarted = 0;
+if (!threadStarted) {
+    wiringPiSetupGpio();
+    pinMode(20, INPUT);
+    pinMode(21, INPUT);
+    pullUpDnControl(20, PUD_UP);
+    pullUpDnControl(21, PUD_UP);
+    pthread_t th;
+    pthread_create(&th, NULL, +[](void*) -> void* {
+        int lastClk = digitalRead(20);
+        while (1) {
+            int clk = digitalRead(20);
+            if (clk != lastClk && clk == LOW) {
+                if (digitalRead(21) != clk) {
+                    if (currentTemp < 45) currentTemp++;
+                } else {
+                    if (currentTemp > 15) currentTemp--;
+                }
+            }
+            lastClk = clk;
+            usleep(2000);
         }
-        // Save updated temperature immediately so next call sees the change
-        FILE* wf = fopen("/tmp/atlas_temp", "w");
-        if (wf) { fprintf(wf, "%d\n", currentTemp); fclose(wf); }
-    }
-    lastClk = clkState;
-    usleep(2000); // 2ms between samples
+    }, NULL);
+    pthread_detach(th);
+    threadStarted = 1;
 }
-
 value = currentTemp;
 ]]></Service_Formula>
 					<Service_NumberInputs>0</Service_NumberInputs>
 					<Service_InputTypes></Service_InputTypes>
 					<Service_InputDescriptions></Service_InputDescriptions>
-					<Library_Number>1</Library_Number>
-					<Libraries>wiringPi.h</Libraries>
+					<Library_Number>3</Library_Number>
+					<Libraries>wiringPi.h,pthread.h,unistd.h</Libraries>
 					<ADC_Number>0</ADC_Number>
 				</Service_1>
 				<Number_Services>1</Number_Services>
