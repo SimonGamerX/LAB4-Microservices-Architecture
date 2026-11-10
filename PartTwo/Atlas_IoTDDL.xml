@@ -118,8 +118,9 @@
 					<OutputDescription>value</OutputDescription>
 					<OutputType>int</OutputType>
 					<Service_Formula><![CDATA[
-// Maps 16-bit ADS1115 reading (0-65535) on CH0 to percentage (0-100)
-int pct = (adsRead0 * 100) / 65535;
+// ADS1115 at +-4.096V gain: 3.3V rail maxes out at ~26400 raw counts (not 65535).
+// Using 26400 as full-scale so 0% = darkness, 100% = full 3.3V bright light.
+int pct = (adsRead0 * 100) / 26400;
 value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 ]]></Service_Formula>
 					<Service_NumberInputs>0</Service_NumberInputs>
@@ -182,22 +183,42 @@ value = (pct < 0) ? 0 : ((pct > 100) ? 100 : pct);
 					<OutputDescription>value</OutputDescription>
 					<OutputType>int</OutputType>
 					<Service_Formula><![CDATA[
+// Rotary Encoder temperature tracking with file-based persistence.
+// Stores current temperature in /tmp/atlas_temp so state survives between calls.
+// Polls GPIO 20 (CLK) and GPIO 21 (DT) for 300ms per call to catch user rotations.
+#include <stdio.h>
+#include <unistd.h>
 int clkPin = 20;
-int dtPin = 21;
+int dtPin  = 21;
 wiringPiSetupGpio();
 pinMode(clkPin, INPUT);
-pinMode(dtPin, INPUT);
-static int currentTemp = 24;
-static int lastClk = HIGH;
-int clkState = digitalRead(clkPin);
-if (clkState != lastClk && clkState == LOW) {
-    if (digitalRead(dtPin) != clkState) {
-        if (currentTemp < 45) currentTemp++;
-    } else {
-        if (currentTemp > 15) currentTemp--;
+pullUpDnControl(clkPin, PUD_UP);
+pinMode(dtPin,  INPUT);
+pullUpDnControl(dtPin,  PUD_UP);
+
+// Load persisted temperature from file (default 24 degrees C on first run)
+int currentTemp = 24;
+FILE* rf = fopen("/tmp/atlas_temp", "r");
+if (rf) { fscanf(rf, "%d", &currentTemp); fclose(rf); }
+
+// Poll the encoder for 300ms (150 iterations x 2ms) to catch rotations
+int lastClk = digitalRead(clkPin);
+for (int i = 0; i < 150; i++) {
+    int clkState = digitalRead(clkPin);
+    if (clkState != lastClk && clkState == LOW) {
+        if (digitalRead(dtPin) != clkState) {
+            if (currentTemp < 45) currentTemp++;
+        } else {
+            if (currentTemp > 15) currentTemp--;
+        }
+        // Save updated temperature immediately so next call sees the change
+        FILE* wf = fopen("/tmp/atlas_temp", "w");
+        if (wf) { fprintf(wf, "%d\n", currentTemp); fclose(wf); }
     }
+    lastClk = clkState;
+    usleep(2000); // 2ms between samples
 }
-lastClk = clkState;
+
 value = currentTemp;
 ]]></Service_Formula>
 					<Service_NumberInputs>0</Service_NumberInputs>

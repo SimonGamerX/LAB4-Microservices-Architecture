@@ -3,7 +3,7 @@ CXXFLAGS = -std=c++17 -Wall -O2 -pthread
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-    LIBS = -lwiringPi
+    LIBS = -lwiringPi -lcrypt -lrt -lm
 else
     LIBS = -lws2_32
 endif
