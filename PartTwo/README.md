@@ -4,21 +4,24 @@
 
 ### 1. Install & Build Atlas Middleware (Raspberry Pi)
 ```bash
-# Clone the Atlas middleware
+# 1. Clone the Atlas middleware
+cd ~/LAB4-Microservices-Architecture/PartTwo
 git clone https://github.com/NickLiJunjie/AtlasThingMiddleware_RPI.git
-cd AtlasThingMiddleware_RPI
 
-# Copy our generated IoT-DDL configuration file
-cp ../PartTwo/Atlas_IoTDDL.xml ConfigurationFiles/Atlas_IoTDDL.xml
+# 2. Enter the inner project directory (Note: Atlas project files are inside Atlas-IoT_thing or Atlas-IoT_Thing)
+cd AtlasThingMiddleware_RPI/Atlas-IoT*
 
-# Compile
-mkdir -p build && cd build
-cmake ..
+# 3. Copy our generated IoT-DDL configuration file into ConfigurationFiles/
+cp ../../Atlas_IoTDDL.xml ConfigurationFiles/Atlas_IoTDDL.xml
+
+# 4. Compile directly using cmake pointing to Main/
+cmake Main/
 make
 
-# Run the middleware (broadcasts tweets & listens on port 6668)
+# 5. Run the Atlas middleware (listens on port 6668)
 ./Atlas
 ```
+*(If you were in an accidental `build/` directory, simply remove it with `rm -rf build` and `cd` into the inner `Atlas-IoT*` directory as shown above).*
 
 ### 2. Run Demo IoT Application (Laptop)
 ```bash
